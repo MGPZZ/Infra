@@ -67,3 +67,8 @@ variable "krr_demo_seed_image" {
   type        = string
   default     = ""
 }
+
+variable "backend_bucket_name" {
+  description = "Remote state 조회를 위한 S3 백엔드 버킷 이름"
+  type        = string
+}

@@ -33,7 +33,7 @@ data "terraform_remote_state" "infra" {
   backend = "s3"
 
   config = {
-    bucket  = "tfstate-bucket-95ada58e"
+    bucket  = var.backend_bucket_name
     key     = "dev-infra/terraform.tfstate"
     region  = "ap-northeast-2"
     profile = var.aws_profile

@@ -5,6 +5,8 @@ terraform {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 # module.argocd(ArgoCD Helm 설치)와 이 모듈 사이에 depends_on이 있어도, ArgoCD가 설치한
 # Application CRD(argoproj.io)가 실제로 API 서버에 등록되기 전에 kubectl_manifest.*가
 # 먼저 시도되면 "no matches for kind Application" 류로 조용히 실패하거나, 다음 apply
@@ -550,7 +552,7 @@ spec:
             create: true
             name: thanos-query
             annotations:
-              eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/project03-thanos-s3-role"
+              eks.amazonaws.com/role-arn: "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/project03-thanos-s3-role"
         storegateway:
           enabled: true
           replicaCount: 1
@@ -571,7 +573,7 @@ spec:
             # 파드에 IRSA IAM 토큰을 자동으로 마운트하도록 설정
             automountServiceAccountToken: true
             annotations:
-              eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/project03-thanos-s3-role"
+              eks.amazonaws.com/role-arn: "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/project03-thanos-s3-role"
         objstoreConfig: |-
           type: s3
           config:
@@ -593,7 +595,7 @@ spec:
             create: true
             name: thanos-compactor
             annotations:
-              eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/project03-thanos-s3-role"
+              eks.amazonaws.com/role-arn: "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/project03-thanos-s3-role"
         bucketweb:
           enabled: false
         receive:
