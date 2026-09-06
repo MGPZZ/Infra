@@ -1,6 +1,8 @@
 # aws 공유 계정 접근
 aws_profile = "admin-seonggyu"
 
+backend_bucket_name = "mgpzz-tflock"
+
 tailscale_auth_key = "tskey-auth-ktDgssHTqq11CNTRL-2WwcP2GfwejKwaD1ngqBfj1go61MY7zEi"
 
 db_user = "scott"
