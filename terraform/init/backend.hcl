@@ -1,2 +1,2 @@
-bucket = "tfstate-bucket-95ada58e"
+bucket         = "mgpzz-tflock"
 dynamodb_table = "mak-tf-lock"

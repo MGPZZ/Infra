@@ -12,6 +12,6 @@ output "s3_bucket_name" {
 
 # ACM 인증서
 output "acm_certificate_arn" {
-  value       = aws_acm_certificate.this.arn
+  value       = var.enable_acm ? aws_acm_certificate.this[0].arn : null
   description = "발급된 ACM 인증서 ARN"
 }

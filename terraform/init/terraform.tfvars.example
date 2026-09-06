@@ -1,0 +1,10 @@
+# ==========================================
+# Terraform Init (Bootstrap) 설정 예시
+# ==========================================
+
+aws_profile         = "admin-seonggyu"
+backend_bucket_name = "mgpzz-tflock"
+dynamodb_table_name = "mak-tf-lock"
+thanos_bucket_name  = "mgpzz-thanos-metrics"
+cnpg_bucket_name    = "mgpzz-cnpg-backup"
+enable_acm          = false
