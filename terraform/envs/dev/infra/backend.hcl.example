@@ -1,6 +1,10 @@
-# =============================================
-# 이 파일을 복사해서 backend.hcl로 만드세요!
+# =======================================
+# 이 파일을 복사해서 backend.hcl로 만드세요
 # cp backend.hcl.example backend.hcl
-# 그리고 본인의 AWS CLI 프로필명으로 변경하세요.
-# =============================================
-profile = "본인의-aws-프로필명"
+# =======================================
+bucket       = "terraform/init을 apply 하면 나오는 bucket 이름을 작성"
+key          = "본인이 원하는 이름.tfstate"
+region       = "ap-northeast-2"
+profile      = "본인의-aws-프로필명"
+use_lockfile = true
+encrypt      = true

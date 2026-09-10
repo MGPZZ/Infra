@@ -1,6 +1,6 @@
-# ----------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # 파일 위치 : /home/user1/practical-project/infra/terraform/init/S3_bucket.tf
-# ----------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 # 파일 최상단 — 버전 명시 (main 프로젝트와 aws 버전 통일)
 terraform {
@@ -54,60 +54,12 @@ resource "aws_s3_bucket_public_access_block" "tfstate" {
   restrict_public_buckets = true
 }
 
-# ----------------------------------------------------------------
-# Thanos 메트릭 장기 보관용 S3 버킷
-# ----------------------------------------------------------------
-
-resource "random_id" "thanos_bucket_suffix" {
-  byte_length = 4
-}
-
-resource "aws_s3_bucket" "thanos_metrics" {
-  bucket        = "project03-thanos-metrics-83154bf5"
-  force_destroy = false
-
-  # dev EKS를 반복해서 destroy/apply하더라도 KRR·Chronos 과거 메트릭은 보존합니다.
-  # 버킷을 정말 폐기할 때만 이 보호를 명시적으로 제거합니다.
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-# 30일 경과 후 자동 삭제 (수명 주기 규칙)
-resource "aws_s3_bucket_lifecycle_configuration" "thanos_metrics_lifecycle" {
-  bucket = aws_s3_bucket.thanos_metrics.id
-
-  rule {
-    id     = "delete-after-30-days"
-    status = "Enabled"
-
-    filter {}
-
-    expiration {
-      days = 30
-    }
-  }
-}
-
-# Thanos 버킷 퍼블릭 접근 전면 차단
-resource "aws_s3_bucket_public_access_block" "thanos_metrics_public_block" {
-  bucket                  = aws_s3_bucket.thanos_metrics.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-output "thanos_s3_bucket_name" {
-  value       = aws_s3_bucket.thanos_metrics.id
-  description = "Thanos metrics S3 bucket name"
-}
 
 # ----------------------------------------------------------------
-# CNPG 백업 보존용 S3 버킷
+# CNPG 백업 보존용 S3 버킷 추후 작성 예정
 # ----------------------------------------------------------------
 resource "aws_s3_bucket" "cnpg_backup_permanent" {
-  bucket        = "project03-cnpg-backup-07l03u"
+  bucket        = "project03-cnpg-backup- OOOOOO"
   force_destroy = false # 백업 데이터 보호를 위해 파괴 방지
 
   lifecycle {

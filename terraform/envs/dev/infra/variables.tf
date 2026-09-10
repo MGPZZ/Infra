@@ -4,16 +4,6 @@ variable "aws_profile" {
   default     = "default"
 }
 
-variable "tailscale_auth_key" {
-  description = "Tailscale 인증 키"
-  type        = string
-  sensitive   = true
-}
-variable "elasticache_node_type" {
-  description = "Sample FastAPI Redis Queue용 ElastiCache 노드 타입"
-  type        = string
-  default     = "cache.t3.micro"
-}
 variable "azs" {
   description = "사용할 가용 영역 목록"
   type        = list(string)

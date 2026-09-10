@@ -4,26 +4,26 @@
 module "karpenter" {
   source = "../../../modules/11-karpenter_setup"
 
-  cluster_name      = module.project03_eks.cluster_name
-  oidc_provider_arn = module.project03_eks.oidc_provider_arn
+  cluster_name      = module.side_project_eks.cluster_name
+  oidc_provider_arn = module.side_project_eks.oidc_provider_arn
 }
 resource "helm_release" "karpenter" {
-  namespace           = "kube-system"
-  name                = "karpenter"
-  repository          = "oci://public.ecr.aws/karpenter"
-  chart               = "karpenter"
-  version             = "1.14.0"
-  
+  namespace  = "kube-system"
+  name       = "karpenter"
+  repository = "oci://public.ecr.aws/karpenter"
+  chart      = "karpenter"
+  version    = "1.14.0"
+
   set {
     name  = "settings.clusterName"
     value = module.project03_eks.cluster_name
   }
-  
+
   set {
     name  = "settings.interruptionQueue"
     value = module.karpenter.queue_name
   }
-  
+
   set {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
     value = module.karpenter.iam_role_arn
@@ -37,7 +37,7 @@ resource "helm_release" "karpenter" {
   # Service account 이름 karpenter 고정
   set {
     name  = "serviceAccount.name"
-    value = "karpenter" 
+    value = "karpenter"
   }
-  depends_on = [module.karpenter, module.project03_eks]
+  depends_on = [module.karpenter, module.side_project_eks]
 }
