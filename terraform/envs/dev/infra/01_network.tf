@@ -13,7 +13,7 @@ module "side_project_vpc" {
 # [2] 퍼블릭 서브넷 (인터넷 통신 가능 영역) 생성
 # Public Subnet A (AZ-a) nat instance가 위치합니다
 # EC2 생성 시 자동으로 퍼블릭 IP를 부여함
-module "side__public_subnet_a" {
+module "side_project_public_subnet_a" {
   source        = "../../../modules/02-subnet"
   vpc_id        = module.side_project_vpc.vpc_id
   cidr_block    = "10.0.1.0/24"
@@ -21,7 +21,7 @@ module "side__public_subnet_a" {
   map_public_ip = true
   name          = "side-project-public-subnet-a"
 
-  # loadbalancer가 만들어지기 위해 태그 붙이기
+  # loadbalancer가 걸쳐있어도 되는 subnet에만 붙는 태그 설정
   cluster_role_subnet = 1
 }
 
@@ -35,14 +35,14 @@ module "side_project_public_subnet_c" {
   map_public_ip = true
   name          = "side-project-public-subnet-c"
 
-  # loadbalancer가 만들어지기 위해 태그 붙이기
+  # loadbalancer가 걸쳐있어도 되는 subnet에만 붙는 태그 설정
   cluster_role_subnet = 1
 }
 
 
 # [3] 프라이빗 서브넷 생성
 # Private Subnet (AZ-a)
-# az zone a에는 keda와 tailscale 그리고 모니터링에 필요한 grafana, prometheus등이 위치합니다
+# az zone a에는 keda와 모니터링에 필요한 grafana, prometheus등이 위치합니다
 module "side_project_private_subnet_cluster_a" {
   source        = "../../../modules/02-subnet"
   vpc_id        = module.side_project_vpc.vpc_id

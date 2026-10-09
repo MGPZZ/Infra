@@ -16,7 +16,7 @@ resource "helm_release" "karpenter" {
 
   set {
     name  = "settings.clusterName"
-    value = module.project03_eks.cluster_name
+    value = module.side_project_eks.cluster_name
   }
 
   set {

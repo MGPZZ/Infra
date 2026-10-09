@@ -20,7 +20,7 @@ resource "null_resource" "wait_for_argocd_application_crd" {
   provisioner "local-exec" {
     command = <<-EOT
       set -euo pipefail
-      aws eks update-kubeconfig --name project03-eks --region ap-northeast-2 --profile ${var.aws_profile}
+      aws eks update-kubeconfig --name side-project-eks --region ap-northeast-2 --profile ${var.aws_profile}
 
       for i in $(seq 1 30); do
         if kubectl get crd applications.argoproj.io -o jsonpath='{.status.conditions[?(@.type=="Established")].status}' 2>/dev/null | grep -q True; then
@@ -437,7 +437,7 @@ resource "null_resource" "krr_data_db_app_reflection" {
 
     command = <<-EOT
       set -euo pipefail
-      aws eks update-kubeconfig --name project03-eks --region ap-northeast-2 --profile ${var.aws_profile}
+      aws eks update-kubeconfig --name side-project-eks --region ap-northeast-2 --profile ${var.aws_profile}
 
       for i in $(seq 1 30); do
         if kubectl -n finops get secret krr-data-db-app >/dev/null 2>&1; then
@@ -550,7 +550,7 @@ spec:
             create: true
             name: thanos-query
             annotations:
-              eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/project03-thanos-s3-role"
+              eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/side-project-thanos-s3-role"
         storegateway:
           enabled: true
           replicaCount: 1
@@ -571,11 +571,11 @@ spec:
             # 파드에 IRSA IAM 토큰을 자동으로 마운트하도록 설정
             automountServiceAccountToken: true
             annotations:
-              eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/project03-thanos-s3-role"
+              eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/side-project-thanos-s3-role"
         objstoreConfig: |-
           type: s3
           config:
-            bucket: project03-thanos-metrics-83154bf5
+            bucket: side-project-thanos-metrics-83154bf5
             endpoint: s3.ap-northeast-2.amazonaws.com
             region: ap-northeast-2
         compactor:
@@ -593,7 +593,7 @@ spec:
             create: true
             name: thanos-compactor
             annotations:
-              eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/project03-thanos-s3-role"
+              eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/side-project-thanos-s3-role"
         bucketweb:
           enabled: false
         receive:

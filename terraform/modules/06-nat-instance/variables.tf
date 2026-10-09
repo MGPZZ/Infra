@@ -3,12 +3,6 @@ variable "name" {
   type        = string
 }
 
-
-variable "tailscale_auth_key" {
-  description = "Tailscale Auth Key for Subnet Router"
-  type        = string
-}
-
 variable "subnet_id" {
   description = "The ID of the public subnet where the NAT instance will be placed"
   type        = string

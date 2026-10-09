@@ -23,7 +23,7 @@ variable "grafana_admin_password" {
 variable "bank_jwt_secretsmanager_name" {
   description = "교체용 Bank of Anthos JWT 키 쌍이 저장된 AWS Secrets Manager 이름"
   type        = string
-  default     = "project03/bank-of-anthos/jwt-v2"
+  default     = "side-project/bank-of-anthos/jwt-v2"
 }
 
 variable "enable_bank_jwt_rotation" {
@@ -53,7 +53,7 @@ variable "enable_bank_loadgen_credentials" {
 variable "bank_loadgen_credentials_secretsmanager_name" {
   description = "Bank Load Generator 테스트 계정이 저장된 AWS Secrets Manager 이름"
   type        = string
-  default     = "project03/bank-loadgen-credentials"
+  default     = "side-project/bank-loadgen-credentials"
 }
 
 variable "enable_krr_demo_seed" {

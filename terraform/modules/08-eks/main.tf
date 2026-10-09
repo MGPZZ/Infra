@@ -15,6 +15,7 @@ module "eks" {
   enable_irsa                              = true
 
   cluster_addons = {
+    # coredns는 서비스를 이름으로 찾을 수 있게해줌
     coredns = {
       resolve_conflicts_on_create = "OVERWRITE"
       resolve_conflicts_on_update = "OVERWRITE"
@@ -23,6 +24,7 @@ module "eks" {
         podAnnotations = {
           "karpenter.sh/do-not-disrupt" = "true"
         }
+        # 특정 노드나 가용영역에 coredns가 몰리지않게하는 설정 topologySpreadConstraints
         topologySpreadConstraints = [
           {
             maxSkew           = 1
@@ -63,11 +65,12 @@ module "eks" {
       name                   = "eks-management-node"
       instance_types         = var.instance_types
       ami_type               = var.ami_type
-      min_size               = 1
-      max_size               = 2
-      desired_size           = 1
+      min_size               = 2
+      max_size               = 3
+      desired_size           = 2
       vpc_security_group_ids = var.node_security_group_ids
-
+      # manage node는 라벨을 management로 붙임
+      # karpenter가 붙을 수 있게 태그 추가 작성
       labels = {
         role                      = "management"
         "karpenter.sh/controller" = "true"
@@ -82,7 +85,7 @@ module "eks" {
       max_size               = var.max_size
       desired_size           = var.desired_size
       vpc_security_group_ids = var.node_security_group_ids
-
+      # worker node는 라벨을 worker로 붙임
       labels = {
         role = "worker"
       }

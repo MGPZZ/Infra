@@ -2,7 +2,7 @@
 # 1. IAM Policy for Thanos S3 Access
 ############################################
 resource "aws_iam_policy" "thanos_s3_policy" {
-  name        = "project03-thanos-s3-policy"
+  name        = "side-project-thanos-s3-policy"
   description = "IAM Policy for Thanos to access S3 metrics bucket"
 
   policy = jsonencode({
@@ -15,7 +15,7 @@ resource "aws_iam_policy" "thanos_s3_policy" {
           "s3:GetBucketLocation"
         ]
         Resource = [
-          "arn:aws:s3:::project03-thanos-metrics-83154bf5"
+          "arn:aws:s3:::side-project-thanos-metrics-83154bf5"
         ]
       },
       {
@@ -26,7 +26,7 @@ resource "aws_iam_policy" "thanos_s3_policy" {
           "s3:DeleteObject"
         ]
         Resource = [
-          "arn:aws:s3:::project03-thanos-metrics-83154bf5/*"
+          "arn:aws:s3:::side-project-thanos-metrics-83154bf5/*"
         ]
       }
     ]
@@ -40,11 +40,11 @@ module "thanos_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "~> 5.0"
 
-  role_name = "project03-thanos-s3-role"
+  role_name = "side-project-thanos-s3-role"
 
   oidc_providers = {
     main = {
-      provider_arn               = module.project03_eks.oidc_provider_arn
+      provider_arn = module.side_project_eks.oidc_provider_arn
       # Thanos Sidecar와 Thanos Store Gateway가 이 역할을 사용합니다.
       namespace_service_accounts = [
         "prometheus:prometheus-stack-kube-prom-prometheus",

@@ -6,7 +6,7 @@
 
 ## 승인 전 준비 상태
 
-- 새 AWS Secrets Manager 이름: project03/bank-of-anthos/jwt-v2
+- 새 AWS Secrets Manager 이름: side-project/bank-of-anthos/jwt-v2
 - 새 Kubernetes Secret 이름: bank-jwt-key-v2
 - 필수 JSON 키 이름: jwtRS256.key, jwtRS256.key.pub
 - Terraform이 먼저 생성·관리하는 대상 Namespace: frontend, backend
@@ -15,7 +15,7 @@
 ## 승인 후 교체 순서
 
 1. 인터넷과 셸 이력에 키를 남기지 않는 안전한 단말에서 새 RSA 키 쌍을 생성합니다.
-2. 새 키 쌍을 AWS Secrets Manager project03/bank-of-anthos/jwt-v2에 저장합니다.
+2. 새 키 쌍을 AWS Secrets Manager side-project/bank-of-anthos/jwt-v2에 저장합니다.
 3. 이 디렉터리에서 Terraform plan을 검토합니다.
 4. Frontend와 Backend Application의 자동 동기화를 일시 보류하고 현재 상태를 기록합니다.
 5. Terraform이 frontend/backend Namespace를 만든 뒤 kubernetes_secret_v1.bank_jwt 두 리소스를 생성하는지 확인하고, 값 대신 Secret 이름과 데이터 키 이름만 검증합니다.

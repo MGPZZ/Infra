@@ -36,11 +36,11 @@ terraform {
 
 # EKS 클러스터 상태 조회
 data "aws_eks_cluster" "cluster" {
-  name = "project03-eks"
+  name = "side-project-eks"
 }
 
 data "aws_eks_cluster_auth" "cluster" {
-  name = "project03-eks"
+  name = "side-project-eks"
 }
 
 provider "kubernetes" {

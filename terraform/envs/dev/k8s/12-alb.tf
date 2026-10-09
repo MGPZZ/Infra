@@ -43,13 +43,13 @@ resource "time_sleep" "wait_for_alb" {
 }
 # alb arn, host zone id 등 필요한 정보를 얻어내기 위해 data 사용
 data "aws_lb" "this" {
-  name       = "project03-alb"
+  name       = "side-project-alb"
   depends_on = [time_sleep.wait_for_alb]
 
   lifecycle {
     postcondition {
       condition     = self.vpc_id == data.terraform_remote_state.infra.outputs.vpc_id
-      error_message = "project03-alb exists in a different VPC. Remove the stale ALB/target groups before provisioning this environment."
+      error_message = "side-project-alb exists in a different VPC. Remove the stale ALB/target groups before provisioning this environment."
     }
   }
 }

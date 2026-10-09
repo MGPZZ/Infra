@@ -2,7 +2,7 @@
 # 2. IAM Policy for S3 Access
 ############################################
 resource "aws_iam_policy" "cnpg_s3_policy" {
-  name        = "project03-cnpg-s3-policy"
+  name        = "side-project-cnpg-s3-policy"
   description = "IAM Policy for CNPG to access S3 backup bucket"
 
   policy = jsonencode({
@@ -17,8 +17,8 @@ resource "aws_iam_policy" "cnpg_s3_policy" {
           "s3:ListBucket"
         ]
         Resource = [
-          "arn:aws:s3:::project03-cnpg-backup-07l03u",
-          "arn:aws:s3:::project03-cnpg-backup-07l03u/*"
+          "arn:aws:s3:::side-project-cnpg-backup-07l03u",
+          "arn:aws:s3:::side-project-cnpg-backup-07l03u/*"
         ]
       }
     ]
@@ -32,12 +32,12 @@ module "cnpg_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "~> 5.0"
 
-  role_name = "project03-cnpg-s3-role"
+  role_name = "side-project-cnpg-s3-role"
 
   oidc_providers = {
     main = {
-      provider_arn               = module.project03_eks.oidc_provider_arn
-      namespace_service_accounts = ["default:cnpg-sa","finops:krr-data-db"]
+      provider_arn               = module.side_project_eks.oidc_provider_arn
+      namespace_service_accounts = ["default:cnpg-sa", "finops:krr-data-db"]
     }
   }
 

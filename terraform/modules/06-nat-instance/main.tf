@@ -42,12 +42,6 @@ resource "aws_instance" "nat" {
               
               iptables-save > /etc/sysconfig/iptables
 
-              # Tailscale 설치 및 Subnet Router 설정
-              curl -fsSL https://tailscale.com/install.sh | sh
-              systemctl enable --now tailscaled
-              
-              # Tailscale 인증 및 라우팅 광고 시작
-              tailscale up --authkey="${var.tailscale_auth_key}" --advertise-routes=10.0.0.0/16 --hostname="${var.name}"
               EOF
 
   tags = {

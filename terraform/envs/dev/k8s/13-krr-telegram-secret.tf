@@ -11,16 +11,16 @@
 # telegram.existingSecret을 이 이름으로 지정해두면(finops/charts/finops/values.yaml)
 # 차트가 자체 Secret을 만들지 않아 ArgoCD가 이 Secret을 아예 건드리지 않습니다.
 #
-# 주의: 아래 데이터 소스가 항상 조회되므로, project03/krr-telegram이 AWS Secrets
+# 주의: 아래 데이터 소스가 항상 조회되므로, side-project/krr-telegram이 AWS Secrets
 # Manager에 미리 존재해야 dev-k8s 전체 apply가 됩니다(없으면 이 레이어 apply 자체가
 # 실패). 인프라 존재 여부와 무관하게 지금 바로 만들어두면 됩니다:
 #   aws secretsmanager create-secret \
-#     --name project03/krr-telegram \
+#     --name side-project/krr-telegram \
 #     --secret-string '{"TELEGRAM_BOT_TOKEN":"<본인 토큰>","TELEGRAM_CHAT_ID":"<본인 챗ID>"}' \
 #     --profile <본인 AWS 프로필>
 
 data "aws_secretsmanager_secret" "krr_telegram" {
-  name = "project03/krr-telegram"
+  name = "side-project/krr-telegram"
 }
 
 data "aws_secretsmanager_secret_version" "krr_telegram" {

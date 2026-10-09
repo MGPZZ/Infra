@@ -9,7 +9,7 @@ data "http" "aws_lb_controller_policy" {
 
 # 공식 정책 문서를 하나의 권한으로 만들기
 resource "aws_iam_policy" "aws_lb_controller" {
-  name        = "${module.project03_eks.cluster_name}-aws-lb-controller"
+  name        = "${module.side_project_eks.cluster_name}-aws-lb-controller"
   description = "IAM policy for AWS Load Balancer Controller"
   policy      = data.http.aws_lb_controller_policy.response_body
 }
@@ -21,18 +21,18 @@ data "aws_iam_policy_document" "aws_lb_controller_assume" {
     actions = ["sts:AssumeRoleWithWebIdentity"]
     principals {
       type        = "Federated"
-      identifiers = [module.project03_eks.oidc_provider_arn]
+      identifiers = [module.side_project_eks.oidc_provider_arn]
     }
 
     condition {
       test     = "StringEquals"
-      variable = "${replace(module.project03_eks.cluster_oidc_issuer_url, "https://", "")}:sub"
+      variable = "${replace(module.side_project_eks.cluster_oidc_issuer_url, "https://", "")}:sub"
       values   = ["system:serviceaccount:kube-system:aws-load-balancer-controller"]
     }
 
     condition {
       test     = "StringEquals"
-      variable = "${replace(module.project03_eks.cluster_oidc_issuer_url, "https://", "")}:aud"
+      variable = "${replace(module.side_project_eks.cluster_oidc_issuer_url, "https://", "")}:aud"
       values   = ["sts.amazonaws.com"]
     }
   }
@@ -40,7 +40,7 @@ data "aws_iam_policy_document" "aws_lb_controller_assume" {
 
 # Role 만들기
 resource "aws_iam_role" "aws_lb_controller" {
-  name               = "${module.project03_eks.cluster_name}-aws-lb-controller"
+  name               = "${module.side_project_eks.cluster_name}-aws-lb-controller"
   assume_role_policy = data.aws_iam_policy_document.aws_lb_controller_assume.json
 }
 

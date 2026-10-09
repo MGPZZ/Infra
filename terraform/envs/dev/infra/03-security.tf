@@ -11,13 +11,11 @@ module "security_groups" {
   # 프라이빗 서브넷들의 대역폭
   eks_private_subnet_cidrs = [
     "10.0.10.0/24",
-    "10.0.30.0/24",
-    "10.0.20.0/24",
-    "10.0.40.0/24"
+    "10.0.30.0/24"
   ]
 }
 
 module "iam" {
   source = "../../../modules/05-iam"
-  name   = "project03"
+  name   = "side-project"
 }

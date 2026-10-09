@@ -36,7 +36,7 @@ resource "kubectl_manifest" "lbc_gateway_crds" {
 }
 
 data "aws_iam_role" "aws_lb_controller" {
-  name = "project03-eks-aws-lb-controller"
+  name = "side-project-eks-aws-lb-controller"
 }
 
 # ALB Controller를 Helm으로 EKS에 설치
@@ -50,7 +50,7 @@ resource "helm_release" "aws_lb_controller" {
   set = [
     {
       name  = "clusterName"
-      value = "project03-eks"
+      value = "side-project-eks"
     },
     {
       name  = "serviceAccount.create"
