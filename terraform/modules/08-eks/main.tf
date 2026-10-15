@@ -11,7 +11,7 @@ module "eks" {
   node_security_group_tags       = var.node_security_group_tags
 
   authentication_mode                      = "API_AND_CONFIG_MAP"
-  enable_cluster_creator_admin_permissions = false
+  enable_cluster_creator_admin_permissions = true
   enable_irsa                              = true
 
   cluster_addons = {
@@ -93,7 +93,7 @@ module "eks" {
 
     eks-db-node = {
       name                   = "eks-db-node"
-      instance_types         = ["t3.medium"]
+      instance_types         = ["t3.small"]
       ami_type               = var.ami_type
       min_size               = 1
       max_size               = 2

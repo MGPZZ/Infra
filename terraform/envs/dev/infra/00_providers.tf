@@ -1,6 +1,5 @@
 provider "aws" {
   region  = "ap-northeast-2"
-  profile = var.aws_profile
 }
 
 terraform {
@@ -22,6 +21,10 @@ terraform {
     kubectl = {
       source  = "alekc/kubectl"
       version = "~> 2.0"
+    }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.7"
     }
   }
 }

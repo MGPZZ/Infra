@@ -53,6 +53,16 @@ module "side_project_nat_instance_c" {
 # AZ별로 프라이빗 서브넷이 각각 자신의 NAT 인스턴스를 바라보도록 라우팅 테이블을 2개 생성합니다.
 resource "aws_route_table" "side_project_private_rt_a" {
   vpc_id = module.side_project_vpc.vpc_id
+  # nat instance c를 통해서 외부로 트래픽이 통하는지 확인하기 위해 1.1.1.1/32 와 8.8.8.8/32 로 라우팅
+  route {
+    cidr_block           = "1.1.1.1/32"
+    network_interface_id = module.side_project_nat_instance_c.primary_network_interface_id
+  }
+
+  route {
+    cidr_block           = "8.8.8.8/32"
+    network_interface_id = module.side_project_nat_instance_c.primary_network_interface_id
+  }
 
   route {
     cidr_block           = "0.0.0.0/0"
@@ -68,6 +78,16 @@ resource "aws_route_table" "side_project_private_rt_a" {
 
 resource "aws_route_table" "side_project_private_rt_c" {
   vpc_id = module.side_project_vpc.vpc_id
+  # nat instance a를 통해서 외부로 트래픽이 통하는 지 확인하기 위해 1.1.1.1/32 와 8.8.8.8/32 로 라우팅
+  route {
+    cidr_block           = "1.1.1.1/32"
+    network_interface_id = module.side_project_nat_instance_a.primary_network_interface_id
+  }
+
+  route {
+    cidr_block           = "8.8.8.8/32"
+    network_interface_id = module.side_project_nat_instance_a.primary_network_interface_id
+  }
 
   route {
     cidr_block           = "0.0.0.0/0"
