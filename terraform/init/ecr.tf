@@ -1,6 +1,6 @@
 # ECR (Container Registry) - 표준화된 마이크로서비스 저장소
 module "ecr_frontend" {
-  source               = "../modules/09-ecr" 
+  source               = "../modules/09-ecr"
   repository_name      = "frontend"
   image_tag_mutability = "MUTABLE"
 }
@@ -49,12 +49,6 @@ module "notification_gateway_ecr" {
   image_tag_mutability = "MUTABLE"
 }
 
-# AI 시계열 부하 예측 모델 서빙 이미지
-module "chronos_model_ecr" {
-  source               = "../modules/09-ecr"
-  repository_name      = "chronos-model"
-  image_tag_mutability = "MUTABLE"
-}
 
 
 
