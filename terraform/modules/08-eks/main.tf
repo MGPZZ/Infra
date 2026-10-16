@@ -20,16 +20,40 @@ module "eks" {
       resolve_conflicts_on_create = "OVERWRITE"
       resolve_conflicts_on_update = "OVERWRITE"
       configuration_values = jsonencode({
-        replicaCount = 3
+        # pod 개수를 2개로하여 management 노드가 있는 두 AZ에 하나씩 배치
+        replicaCount = 2
+        autoScaling = {
+          enabled = false
+        }
+        affinity = {
+          nodeAffinity = {
+            # 조건에 맞지 않는 노드에는 스케쥴링 되지 않음
+            requiredDuringSchedulingIgnoredDuringExecution = {
+              nodeSelectorTerms = [ 
+                {
+                  # 스케쥴링 되는 노드 조건 management 노드
+                  matchExpressions = [
+                    {
+                      key      = "role"
+                      operator = "In"
+                      values   = ["management"]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
         podAnnotations = {
           "karpenter.sh/do-not-disrupt" = "true"
         }
-        # 특정 노드나 가용영역에 coredns가 몰리지않게하는 설정 topologySpreadConstraints
+        # management 노드가 있는 두 AZ에 하나씩 배치하며, 한 AZ만 있으면 두 번째 Pod는 대기합니다.
         topologySpreadConstraints = [
           {
             maxSkew           = 1
+            minDomains        = 2
             topologyKey       = "topology.kubernetes.io/zone"
-            whenUnsatisfiable = "ScheduleAnyway"
+            whenUnsatisfiable = "DoNotSchedule"
             labelSelector = {
               matchLabels = {
                 "k8s-app" = "kube-dns"
