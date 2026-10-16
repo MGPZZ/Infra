@@ -1,3 +1,4 @@
+/*
 ###############################################
 # NAT Route Failover and Egress Check Lambdas
 ###############################################
@@ -37,3 +38,4 @@ module "nat_route_failover_lambda" {
     }
   }
 }
+*/

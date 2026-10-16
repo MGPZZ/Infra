@@ -1,3 +1,4 @@
+/*
 ###############################################
 # NAT Instance Health Monitoring
 ###############################################
@@ -57,3 +58,4 @@ module "nat_system_recovery_alarm" {
   evaluation_periods = 2
   alarm_actions      = ["arn:aws:automate:${data.aws_region.current.name}:ec2:recover"]
 }
+*/
