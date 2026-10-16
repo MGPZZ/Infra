@@ -47,12 +47,12 @@ module "eks" {
         podAnnotations = {
           "karpenter.sh/do-not-disrupt" = "true"
         }
-        # management 노드가 있는 두 AZ에 하나씩 배치하며, 한 AZ만 있으면 두 번째 Pod는 대기합니다.
+        # management 노드가 있는 두 AZ에 하나씩 배치하며, 한 AZ만 있으면 두 번째 Pod는 대기
         topologySpreadConstraints = [
           {
             maxSkew           = 1
             minDomains        = 2
-            topologyKey       = "topology.kubernetes.io/zone"
+            topologyKey       = "topology.kubernetes.io/zone" # 가용영역 분산
             whenUnsatisfiable = "DoNotSchedule"
             labelSelector = {
               matchLabels = {
@@ -62,7 +62,7 @@ module "eks" {
           },
           {
             maxSkew           = 1
-            topologyKey       = "kubernetes.io/hostname"
+            topologyKey       = "kubernetes.io/hostname" # 노드 1개에 다 안올라가게 분산
             whenUnsatisfiable = "DoNotSchedule"
             labelSelector = {
               matchLabels = {

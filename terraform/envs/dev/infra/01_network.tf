@@ -42,17 +42,16 @@ module "side_project_public_subnet_c" {
 
 # [3] 프라이빗 서브넷 생성
 # Private Subnet (AZ-a)
-# az zone a에는 keda와 모니터링에 필요한 grafana, prometheus등이 위치합니다
 module "side_project_private_subnet_cluster_a" {
-  source        = "../../../modules/02-subnet"
-  vpc_id        = module.side_project_vpc.vpc_id
-  cidr_block    = "10.0.10.0/24"
-  az            = var.azs[0]
-  map_public_ip = false # 외부에서 IP로 직접 접근할 수 없도록 막음
-  name          = "side-project-private-subnet-cluster-a"
+  source           = "../../../modules/02-subnet"
+  vpc_id           = module.side_project_vpc.vpc_id
+  cidr_block       = "10.0.10.0/24"
+  az               = var.azs[0]
+  map_public_ip    = false # 외부에서 IP로 직접 접근할 수 없도록 막음
+  name             = "side-project-private-subnet-cluster-a"
+  karpenter_subnet = "side-project-eks"
 }
 # Private Subnet (AZ-c)
-# worker node들이 배치되어 cluster로 pod들이 돌아갈 private subnet입니다.
 module "side_project_private_subnet_cluster_c" {
   source           = "../../../modules/02-subnet"
   vpc_id           = module.side_project_vpc.vpc_id
