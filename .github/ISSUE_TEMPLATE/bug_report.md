@@ -1,17 +1,19 @@
 ---
-name: Bug report
-about: Create a report to help us improve
-title: ''
+name: 버그 신고
+about: 오류나 비정상 동작을 기록합니다.
+title: '[BUG] '
 labels: bug
 assignees: ''
-
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+## 문제 내용
+<!-- 발생한 증상과 실행 환경을 작성해주세요. -->
 
-**To Reproduce**
-Steps to reproduce the behavior.
+## 재현 방법
+1. <!-- 재현 단계를 작성해주세요. -->
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+## 기대 동작
+<!-- 정상적으로 동작해야 하는 내용을 작성해주세요. -->
+
+## 참고 자료
+<!-- 관련 로그나 스크린샷이 있으면 첨부해주세요. -->
