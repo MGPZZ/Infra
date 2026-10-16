@@ -1,7 +1,22 @@
 # Prometheus/Grafana/Alertmanager 커스텀 설정
-# 담당: 한윤성 (FinOps/모니터링 파트)
+prometheusOperator:
+  nodeSelector:
+    role: management
+  admissionWebhooks:
+    patch:
+      nodeSelector:
+        role: managemen
+
+
+kube-state-metrics:
+  nodeSelector:
+    role: management
+
+
 alertmanager:
   alertmanagerSpec:
+    nodeSelector:
+      role: management
     resources:
       requests:
         cpu: 50m
@@ -14,7 +29,7 @@ alertmanager:
       resolve_timeout: 5m
     route:
       receiver: 'null'
-      group_by: ['alertname']
+      grup_by: ['alertname']
       group_wait: 30s
       group_interval: 5m
       repeat_interval: 12h
@@ -26,9 +41,11 @@ alertmanager:
       - name: 'null'
       - name: 'tg-gateway-webhook'
         webhook_configs:
-          # TODO: tg-gateway Service의 정확한 이름/네임스페이스는 mak-argocd-deploy 매니페스트 확인 후 확정 필요 (임종원님 확인 필요)
-          - url: 'http://tg-gateway-service.default.svc.cluster.local:8000/webhook/alertmanager'
+          - url: 'http://tg-gateway-service.monitoring.svc.cluster.local:8000/webhook/alertmanager'
             send_resolved: true
+
+
+            
 prometheus:
   # Prometheus가 사용할 ServiceAccount에 Thanos S3 IRSA 권한 추가
   serviceAccount:
@@ -37,6 +54,8 @@ prometheus:
     annotations:
       eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/side-project-thanos-s3-role"
   prometheusSpec:
+    nodeSelector:
+      role: management
     # Helm release name에 의존하지 않고 명시적인 라벨로 ServiceMonitor를 선택합니다.
     serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorSelector: {}
@@ -57,7 +76,7 @@ prometheus:
           name: thanos-objstore-config
           key: objstore.yml
 %{ if enable_krr_demo_seed ~}
-    # KRR/Chronos 더미 이력 데이터를 Prometheus가 뜨기 전에 미리 채워 넣는 initContainer입니다.
+    # KRR 더미 이력 데이터를 Prometheus가 뜨기 전에 미리 채워 넣는 initContainer입니다.
     # sample-fastapi 네임스페이스뿐 아니라 Bank of Anthos 백엔드(backend 네임스페이스:
     # userservice/contacts/balancereader/ledgerwriter/transactionhistory)까지 함께 시딩합니다.
     # destroy/apply를 반복하는 dev 환경 특성상 "데이터를 보존"하는 대신, Prometheus가
@@ -77,6 +96,8 @@ prometheus:
             mountPath: /prometheus
 %{ endif ~}
 grafana:
+  nodeSelector:
+    role: management
   # persistence가 ReadWriteOnce PVC라 기본 RollingUpdate 전략(새 파드를 먼저 띄우고
   # 옛 파드를 나중에 지움)과 근본적으로 충돌합니다 - 새 파드가 볼륨을 못 붙잡아
   # Multi-Attach 에러로 영원히 Pending 상태가 되고, ArgoCD도 그 Deployment가
@@ -104,7 +125,7 @@ grafana:
   additionalDataSources:
     - name: Thanos
       type: prometheus
-      url: http://thanos-query.prometheus.svc.cluster.local:9090
+      url: http://thanos-query.monitoring.svc.cluster.local:9090
       access: proxy
       isDefault: false
       version: 1

@@ -16,10 +16,6 @@ data "aws_ecr_repository" "finops_analyzer" {
   name = "finops-analyzer"
 }
 
-data "aws_ecr_repository" "chronos_model" {
-  name = "chronos-model"
-}
-
 # enable_krr_demo_seed가 false면 이 ECR repo가 아직 없어도(init 레이어 미적용) apply가
 # 막히지 않도록 count로 조건부 조회합니다.
 data "aws_ecr_repository" "krr_demo_seed" {
@@ -48,7 +44,6 @@ module "argocd_deploy" {
   domain_name                      = var.domain_name
 
   finops_analyzer_image_repository = data.aws_ecr_repository.finops_analyzer.repository_url
-  chronos_model_image_repository   = data.aws_ecr_repository.chronos_model.repository_url
   redis_host        = data.terraform_remote_state.infra.outputs.redis_primary_endpoint
   redis_port        = data.terraform_remote_state.infra.outputs.redis_port
 

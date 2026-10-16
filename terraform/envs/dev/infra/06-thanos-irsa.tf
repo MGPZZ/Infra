@@ -47,10 +47,10 @@ module "thanos_irsa" {
       provider_arn = module.side_project_eks.oidc_provider_arn
       # Thanos Sidecar와 Thanos Store Gateway가 이 역할을 사용합니다.
       namespace_service_accounts = [
-        "prometheus:prometheus-stack-kube-prom-prometheus",
-        "prometheus:thanos-store",
-        "prometheus:thanos-query",
-        "prometheus:thanos-compactor"
+        "monitoring:prometheus-stack-kube-prom-prometheus",
+        "monitoring:thanos-store",
+        "monitoring:thanos-query",
+        "monitoring:thanos-compactor"
       ]
     }
   }

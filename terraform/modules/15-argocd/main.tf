@@ -35,6 +35,8 @@ resource "helm_release" "argo_rollouts" {
   # 실제 적용 시 컨트롤러 Pod가 재생성되므로 별도 배포 승인이 필요합니다.
   values = [<<-YAML
     controller:
+      nodeSelector:
+        role: management
       initContainers:
         - name: copy-gateway-api-plugin
           image: ghcr.io/argoproj-labs/rollouts-plugin-trafficrouter-gatewayapi:v0.5.0@sha256:cdaf973e2f390034e293af0d4ee08611b6b6c089f1627167b4014c3bcac12a7c

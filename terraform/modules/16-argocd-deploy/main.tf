@@ -62,7 +62,7 @@ spec:
 }))}
   destination:
     server: https://kubernetes.default.svc
-    namespace: prometheus
+    namespace: monitoring
   syncPolicy:
     automated:
       prune: true
@@ -101,6 +101,9 @@ spec:
     targetRevision: 2.20.1
     helm:
       releaseName: keda
+      values: |
+        nodeSelector:
+          role: management
   destination:
     server: https://kubernetes.default.svc
     namespace: keda
@@ -211,38 +214,6 @@ YAML
 }
 
 
-resource "kubectl_manifest" "chronos_model" {
-  yaml_body = <<YAML
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: chronos-model
-  namespace: argocd
-  finalizers:
-  - resources-finalizer.argocd.argoproj.io
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/After-mak/mak-argocd-deploy.git
-    targetRevision: main
-    path: charts/chronos
-    helm:
-      values: |
-        image:
-          repository: ${var.chronos_model_image_repository}
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: monitoring
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-    - CreateNamespace=true
-    - SkipDryRunOnMissingResource=true
-YAML
-}
-
 resource "kubectl_manifest" "grafana_finops_dashboard" {
   yaml_body = <<YAML
 apiVersion: argoproj.io/v1alpha1
@@ -263,7 +234,7 @@ spec:
       - values.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: prometheus
+    namespace: monitoring
   syncPolicy:
     automated:
       prune: true
@@ -408,6 +379,10 @@ spec:
     repoURL: https://emberstack.github.io/helm-charts
     chart: reflector
     targetRevision: "10.0.65"
+    helm:
+      values: |
+        nodeSelector:
+          role: management
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
@@ -444,7 +419,7 @@ resource "null_resource" "krr_data_db_app_reflection" {
           kubectl -n finops annotate secret krr-data-db-app --overwrite \
             reflector.v1.k8s.emberstack.com/reflection-allowed=true \
             reflector.v1.k8s.emberstack.com/reflection-auto-enabled=true \
-            reflector.v1.k8s.emberstack.com/reflection-auto-namespaces=prometheus
+            reflector.v1.k8s.emberstack.com/reflection-auto-namespaces=monitoring
           echo "[reflection] krr-data-db-app Secret에 어노테이션 완료"
           exit 0
         fi
@@ -500,7 +475,7 @@ spec:
     path: charts/tg-gateway
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: monitoring
   syncPolicy:
     automated:
       prune: true
@@ -534,6 +509,8 @@ spec:
         query:
           enabled: true
           replicaCount: 1
+          nodeSelector:
+            role: management
           # Thanos Query 메모리 증설 (2Gi)
           resources:
             requests:
@@ -544,8 +521,8 @@ spec:
               memory: 2Gi
           # Prometheus Sidecar와 Thanos Store를 연결
           stores:
-            - "prometheus-operated.prometheus.svc.cluster.local:10901"
-            - "thanos-storegateway.prometheus.svc.cluster.local:10901"
+            - "prometheus-operated.monitoring.svc.cluster.local:10901"
+            - "thanos-storegateway.monitoring.svc.cluster.local:10901"
           serviceAccount:
             create: true
             name: thanos-query
@@ -554,6 +531,8 @@ spec:
         storegateway:
           enabled: true
           replicaCount: 1
+          nodeSelector:
+            role: management
           # StoreGateway 메모리 증설 (2Gi) 
           resources:
             requests:
@@ -581,6 +560,8 @@ spec:
         compactor:
           # enabled: false
           enabled: true
+          nodeSelector:
+            role: management
           retentionResolutionRaw: 30d   # 원본(상세) 데이터 30일 보존 후 삭제
           retentionResolution5m: 30d    # 5분 축소 데이터 30일 보존
           retentionResolution1h: 30d   # 1시간 축소 데이터 30일 보존
@@ -600,7 +581,7 @@ spec:
           enabled: false
   destination:
     server: https://kubernetes.default.svc
-    namespace: prometheus
+    namespace: monitoring
   syncPolicy:
     automated:
       prune: true

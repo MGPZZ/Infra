@@ -75,7 +75,16 @@ module "eks" {
     }
     kube-proxy         = { resolve_conflicts_on_create = "OVERWRITE" }
     vpc-cni            = { resolve_conflicts_on_create = "OVERWRITE" }
-    aws-ebs-csi-driver = { resolve_conflicts_on_create = "OVERWRITE" }
+    aws-ebs-csi-driver = {
+      resolve_conflicts_on_create = "OVERWRITE"
+      configuration_values = jsonencode({
+        controller = {
+          nodeSelector = {
+            role = "management"
+          }
+        }
+      })
+    }
   }
 
   eks_managed_node_group_defaults = {
