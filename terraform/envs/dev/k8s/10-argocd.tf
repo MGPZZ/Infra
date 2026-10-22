@@ -8,12 +8,15 @@
 module "argocd" {
   source      = "../../../modules/15-argocd"
   aws_profile = var.aws_profile
+
+  # Argo CD creates Services, so the AWS LBC admission webhook must be ready.
+  depends_on = [helm_release.aws_lb_controller]
 }
 
 
 
-data "aws_ecr_repository" "finops_analyzer" {
-  name = "finops-analyzer"
+data "aws_ecr_repository" "krr_analyzer" {
+  name = "krr-analyzer"
 }
 
 # enable_krr_demo_seed가 false면 이 ECR repo가 아직 없어도(init 레이어 미적용) apply가
@@ -29,8 +32,8 @@ data "terraform_remote_state" "infra" {
   backend = "s3"
 
   config = {
-    bucket  = "tfstate-bucket-95ada58e"
-    key     = "dev-infra/terraform.tfstate"
+    bucket  = "tfstate-bucket-229a9274"
+    key     = "dev/terraform.tfstate"
     region  = "ap-northeast-2"
     profile = var.aws_profile
   }
@@ -39,25 +42,23 @@ data "terraform_remote_state" "infra" {
 module "argocd_deploy" {
   source = "../../../modules/16-argocd-deploy"
 
-  aws_profile                      = var.aws_profile
-  grafana_admin_password           = var.grafana_admin_password
-  domain_name                      = var.domain_name
+  aws_profile            = var.aws_profile
+  grafana_admin_password = var.grafana_admin_password
+  domain_name            = var.domain_name
 
-  finops_analyzer_image_repository = data.aws_ecr_repository.finops_analyzer.repository_url
-  redis_host        = data.terraform_remote_state.infra.outputs.redis_primary_endpoint
-  redis_port        = data.terraform_remote_state.infra.outputs.redis_port
+  krr_analyzer_image_repository = data.aws_ecr_repository.krr_analyzer.repository_url
+  # Redis 보류 (infra에 Redis가 생기면 주석 해제)
+  # redis_host                    = data.terraform_remote_state.infra.outputs.redis_primary_endpoint
+  # redis_port                    = data.terraform_remote_state.infra.outputs.redis_port
 
   bank_jwt_secret_name = var.enable_bank_jwt_rotation ? var.bank_jwt_kubernetes_secret_name : var.bank_jwt_current_kubernetes_secret_name
 
   enable_krr_demo_seed = var.enable_krr_demo_seed
   krr_demo_seed_image  = var.enable_krr_demo_seed ? "${data.aws_ecr_repository.krr_demo_seed[0].repository_url}:latest" : ""
 
-  # Create: Gateway -> cleanup guard -> Argo CD applications.
-  # Destroy: Argo CD applications -> cleanup wait -> Gateway.
   depends_on = [
     module.argocd,
     kubectl_manifest.ebs_gp3_storage_class,
-    kubernetes_secret_v1.bank_jwt,
-    time_sleep.wait_for_gateway_cleanup
+    kubernetes_secret_v1.bank_jwt
   ]
 }

@@ -52,18 +52,18 @@ output "ecr_transactionhistory" {
   value       = module.ecr_transactionhistory.repository_url
 }
 
+output "loadgen_ecr_repository_url" {
+  description = "Load generator ECR Repository URL"
+  value       = module.loadgen_ecr.repository_url
+}
+
 output "krr_analyzer_ecr_repository_url" {
   description = "KRR Analyzer ECR Repository URL"
   value       = module.krr_analyzer_ecr.repository_url
 }
 
-output "notification_gateway_ecr_repository_url" {
-  description = "Notification Gateway ECR Repository URL"
-  value       = module.notification_gateway_ecr.repository_url
-}
-
-output "chronos_model_ecr_repository_url" {
-  description = "Chronos Model ECR Repository URL"
-  value       = module.chronos_model_ecr.repository_url
+output "tg_gateway_ecr_repository_url" {
+  description = "TG Gateway ECR Repository URL"
+  value       = module.tg_gateway_ecr.repository_url
 }
 

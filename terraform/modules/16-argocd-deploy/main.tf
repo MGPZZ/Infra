@@ -1,44 +1,17 @@
 terraform {
   required_providers {
     kubectl = { source = "alekc/kubectl" }
-    null    = { source = "hashicorp/null" }
   }
 }
 
-# module.argocd(ArgoCD Helm 설치)와 이 모듈 사이에 depends_on이 있어도, ArgoCD가 설치한
-# Application CRD(argoproj.io)가 실제로 API 서버에 등록되기 전에 kubectl_manifest.*가
-# 먼저 시도되면 "no matches for kind Application" 류로 조용히 실패하거나, 다음 apply
-# 전까지 예전 렌더링 내용으로 stale하게 남을 수 있습니다(krr-demo-seed initContainer가
-# 새로 만든 클러스터에서 빠져 있던 실제 사례로 확인됨 - envs/dev/k8s/10-argocd.tf 상단 주석
-# 참고). CNPG Secret을 기다리던 것과 동일한 패턴으로, CRD가 실제로 Established 상태가
-# 될 때까지 재시도하며 기다린 뒤에야 뒤따르는 Application 매니페스트들을 적용합니다.
-resource "null_resource" "wait_for_argocd_application_crd" {
-  triggers = {
-    always_run = timestamp()
-  }
+# Argo CD 설치 직후 Application CRD가 등록될 시간을 확보하기 위해 30초 대기합니다.
+resource "time_sleep" "wait_for_argocd_application_crd" {
+  create_duration = "30s"
 
-  provisioner "local-exec" {
-    command = <<-EOT
-      set -euo pipefail
-      aws eks update-kubeconfig --name side-project-eks --region ap-northeast-2 --profile ${var.aws_profile}
-
-      for i in $(seq 1 30); do
-        if kubectl get crd applications.argoproj.io -o jsonpath='{.status.conditions[?(@.type=="Established")].status}' 2>/dev/null | grep -q True; then
-          echo "[argocd-crd-wait] applications.argoproj.io CRD Established 확인 완료"
-          exit 0
-        fi
-        echo "[argocd-crd-wait] applications.argoproj.io CRD가 아직 준비 안 됨, 10초 후 재시도 ($i/30)"
-        sleep 10
-      done
-
-      echo "[argocd-crd-wait] 5분 동안 applications.argoproj.io CRD가 준비되지 않았습니다. ArgoCD(module.argocd) 설치 상태를 확인하세요." >&2
-      exit 1
-    EOT
-  }
 }
 
 resource "kubectl_manifest" "prometheus_stack" {
-  depends_on = [null_resource.wait_for_argocd_application_crd]
+  depends_on = [time_sleep.wait_for_argocd_application_crd]
   yaml_body = <<YAML
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -118,21 +91,21 @@ YAML
 }
 
 # 1. Frontend 애플리케이션 (프론트엔드 관련 리소스 담당 네임스페이스)
-resource "kubectl_manifest" "mak_frontend" {
+resource "kubectl_manifest" "frontend" {
   yaml_body = <<YAML
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: mak-frontend
+  name: frontend
   namespace: argocd
   finalizers:
   - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
-    repoURL: https://github.com/After-mak/mak-argocd-deploy.git
-    targetRevision: main
-    path: charts/mak-app    # 또는 프론트엔드 전용 차트 경로로 분리 가능
+    repoURL: https://github.com/MGPZZ/GitOps.git
+    targetRevision: test_alb
+    path: charts/app
     helm:
       values: |
         # 프론트엔드 전용 values 설정 (필요시)
@@ -155,7 +128,7 @@ spec:
         - /spec/rules/0/backendRefs/1/weight
     - group: argoproj.io
       kind: Rollout
-      name: mak-app-rollout
+      name: frontend-rollout
       jsonPointers:
         - /spec/replicas
         - /spec/strategy/canary/activeService
@@ -176,21 +149,21 @@ YAML
 }
 
 # 2. Backend 애플리케이션 (마이크로서비스 및 DB 연동 서비스 담당)
-resource "kubectl_manifest" "mak_backend" {
+resource "kubectl_manifest" "backend" {
   yaml_body = <<YAML
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: mak-backend
+  name: backend
   namespace: argocd
   finalizers:
   - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
-    repoURL: https://github.com/After-mak/mak-argocd-deploy.git
-    targetRevision: main
-    path: charts/mak-app    # 또는 백엔드 전용 차트 경로로 분리 가능
+    repoURL: https://github.com/MGPZZ/GitOps.git
+    targetRevision: test_alb
+    path: charts/app
     helm:
       values: |
         components:
@@ -226,8 +199,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/After-mak/mak-argocd-deploy.git
-    targetRevision: main
+    repoURL: https://github.com/MGPZZ/GitOps.git
+    targetRevision: test_alb
     path: charts/grafana-finops-dashboard
     helm:
       valueFiles:
@@ -254,13 +227,13 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/After-mak/mak-argocd-deploy.git
-    targetRevision: main
+    repoURL: https://github.com/MGPZZ/GitOps.git
+    targetRevision: test_alb
     path: charts/finops
     helm:
       values: |
         image:
-          repository: ${var.finops_analyzer_image_repository}
+          repository: ${var.krr_analyzer_image_repository}
   destination:
     server: https://kubernetes.default.svc
     namespace: finops
@@ -285,8 +258,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/After-mak/mak-argocd-deploy.git
-    targetRevision: main
+    repoURL: https://github.com/MGPZZ/GitOps.git
+    targetRevision: test_alb
     path: charts/argocd-config
   destination:
     server: https://kubernetes.default.svc
@@ -302,7 +275,7 @@ YAML
 
 # ----------------------------------------------------------------
 # CNPG(CloudNativePG) Database 클러스터 배포 (GitOps 연동)
-# - mak-argocd-deploy 저장소의 cnpg-db 폴더(차트)를 읽어와서
+# - GitOps 저장소의 cnpg-db 폴더(차트)를 읽어와서
 #   EKS 내부에 DB 인스턴스와 백업 설정을 자동으로 띄웁니다.
 # ----------------------------------------------------------------
 resource "kubectl_manifest" "cnpg_db" {
@@ -317,8 +290,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/After-mak/mak-argocd-deploy.git
-    targetRevision: main
+    repoURL: https://github.com/MGPZZ/GitOps.git
+    targetRevision: test_alb
     path: charts/cnpg-db
   destination:
     server: https://kubernetes.default.svc
@@ -345,8 +318,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/After-mak/mak-argocd-deploy.git
-    targetRevision: main
+    repoURL: https://github.com/MGPZZ/GitOps.git
+    targetRevision: test_alb
     path: charts/krr-data-db
   destination:
     server: https://kubernetes.default.svc
@@ -395,45 +368,7 @@ spec:
 YAML
 }
 
-# krr-data-db-app Secret에 Reflector 어노테이션을 붙여 prometheus 네임스페이스로
-# 자동 복제되도록 설정합니다. CNPG Operator가 이 Secret을 비동기로 생성하므로
-# (ArgoCD Application이 Synced 상태가 됐다고 Secret이 바로 존재한다는 보장이 없음),
-# kubectl로 정식 리소스를 만드는 대신 Secret이 나타날 때까지 재시도하며 기다렸다가
-# 어노테이션을 붙입니다 (최대 5분, 10초 간격).
-resource "null_resource" "krr_data_db_app_reflection" {
-  triggers = {
-    # 매 apply마다 재실행 - annotate --overwrite라 멱등하고, 누군가 어노테이션을
-    # 지워도(또는 Secret이 재생성돼도) 다음 apply에서 다시 붙습니다.
-    always_run = timestamp()
-  }
-
-  provisioner "local-exec" {
-    interpreter = ["/bin/bash", "-c"]
-
-    command = <<-EOT
-      set -euo pipefail
-      aws eks update-kubeconfig --name side-project-eks --region ap-northeast-2 --profile ${var.aws_profile}
-
-      for i in $(seq 1 30); do
-        if kubectl -n finops get secret krr-data-db-app >/dev/null 2>&1; then
-          kubectl -n finops annotate secret krr-data-db-app --overwrite \
-            reflector.v1.k8s.emberstack.com/reflection-allowed=true \
-            reflector.v1.k8s.emberstack.com/reflection-auto-enabled=true \
-            reflector.v1.k8s.emberstack.com/reflection-auto-namespaces=monitoring
-          echo "[reflection] krr-data-db-app Secret에 어노테이션 완료"
-          exit 0
-        fi
-        echo "[reflection] krr-data-db-app Secret이 아직 없음, 10초 후 재시도 ($i/30)"
-        sleep 10
-      done
-
-      echo "[reflection] 5분 동안 krr-data-db-app Secret을 찾지 못했습니다. CNPG Cluster 상태를 확인하세요." >&2
-      exit 1
-    EOT
-  }
-
-  depends_on = [kubectl_manifest.krr_data_db, kubectl_manifest.reflector]
-}
+# Reflector annotations are inherited from the CNPG Cluster spec.inheritedMetadata.
 
 resource "kubectl_manifest" "karpenter_resources" {
   yaml_body = <<YAML
@@ -445,8 +380,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/After-mak/mak-argocd-deploy.git
-    targetRevision: main
+    repoURL: https://github.com/MGPZZ/GitOps.git
+    targetRevision: test_alb
     path: charts/karpenter
   destination:
     server: https://kubernetes.default.svc
@@ -470,8 +405,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/After-mak/mak-argocd-deploy.git
-    targetRevision: main
+    repoURL: https://github.com/MGPZZ/GitOps.git
+    targetRevision: test_alb
     path: charts/tg-gateway
   destination:
     server: https://kubernetes.default.svc

@@ -1,2 +1,2 @@
-aws_profile = "infra2"
-domain_name = "tuby.shop"
+aws_profile = "default"
+domain_name = "vche.cloud"

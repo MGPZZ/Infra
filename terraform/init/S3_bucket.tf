@@ -59,7 +59,7 @@ resource "aws_s3_bucket_public_access_block" "tfstate" {
 # CNPG 백업 보존용 S3 버킷 추후 작성 예정
 # ----------------------------------------------------------------
 resource "aws_s3_bucket" "cnpg_backup_permanent" {
-  bucket        = "cnpg-backup-${random_id.bucket_suffix.hex}"
+  bucket        = "side-project-cnpg-backup-07l03u"
   force_destroy = false # 백업 데이터 보호를 위해 파괴 방지
 
   lifecycle {

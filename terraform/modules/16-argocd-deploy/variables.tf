@@ -28,8 +28,8 @@ variable "redis_port" {
   default     = 6379
 }
 
-variable "finops_analyzer_image_repository" {
-  description = "FinOps Analyzer가 사용하는 ECR Repository URL"
+variable "krr_analyzer_image_repository" {
+  description = "KRR Analyzer가 사용하는 ECR Repository URL"
   type        = string
   default     = ""
 }

@@ -16,9 +16,9 @@
 | **BalanceReader** | `balancereader` | 계좌 잔액 조회 서비스 |
 | **LedgerWriter** | `ledgerwriter` | 계좌 원장 입출금 기록 서비스 |
 | **TransactionHistory** | `transactionhistory` | 거래 내역 조회 서비스 |
-| **KRR Analyzer** | `krr-analyzer` | FinOps 자원 최적화 분석 배치 및 실시간 서비스 |
+
 | **Notification Gateway** | `notification-gateway` | 텔레그램/슬랙/디스코드 등 범용 메신저 알림 중계 서비스 |
-| **Chronos Model** | `chronos-model` | AI 시계열 부하 예측 모델 서빙 파드 |
+| **TG Gateway** | `tg-gateway` | 텔레그램/슬랙/디스코드 등 범용 메신저 알림 중계 서비스 |
 
 > **URI 형식**: `<AWS_ACCOUNT_ID>.dkr.ecr.ap-northeast-2.amazonaws.com/<리포지토리이름>:<태그>`
 
@@ -127,7 +127,7 @@ jobs:
 
       - name: Build & Push
         run: |
-          IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/userservice:${{ steps.vars.outputs.IMAGE_TAG }}"
+          IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/userservice_ecr:${{ steps.vars.outputs.IMAGE_TAG }}"
           docker build -t "$IMAGE_URI" .
           docker push "$IMAGE_URI"
 ```

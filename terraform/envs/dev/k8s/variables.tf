@@ -1,12 +1,12 @@
 variable "aws_profile" {
   description = "AWS CLI 프로필 이름"
   type        = string
-  default     = "admin-mingi"
+  default     = "default"
 }
 variable "domain_name" {
   description = "서비스 도메인 이름"
   type        = string
-  default     = "tuby.shop"
+  default     = "vche.cloud"
 }
 variable "grafana_admin_password" {
   description = "Grafana admin 계정 비밀번호"

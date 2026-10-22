@@ -72,6 +72,6 @@ resource "helm_release" "aws_lb_controller" {
 
   depends_on = [
     kubectl_manifest.gateway_api_crds,
-    kubectl_manifest.lbc_gateway_crds
+    kubectl_manifest.lbc_gateway_crds,
   ]
 }
