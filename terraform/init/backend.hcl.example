@@ -1,2 +1,0 @@
-bucket  = "your-tfstate-bucket-name"
-profile = "your-aws-profile"

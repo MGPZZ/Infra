@@ -19,9 +19,9 @@ module "side_project_eks" {
 
   instance_types = ["t3.small"]
   ami_type       = "AL2023_x86_64_STANDARD"
-  min_size       = 2
-  max_size       = 3
-  desired_size   = 2
+  min_size       = 4
+  max_size       = 4
+  desired_size   = 4
   admin_users    = var.eks_admin_users
 
 }

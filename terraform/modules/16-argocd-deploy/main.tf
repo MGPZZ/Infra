@@ -30,6 +30,7 @@ spec:
       values: |
         ${indent(8, templatefile("${path.module}/prometheus/my-values.yaml.tpl", {
   grafana_admin_password = var.grafana_admin_password
+  thanos_role_arn        = var.thanos_role_arn
   enable_krr_demo_seed   = var.enable_krr_demo_seed
   krr_demo_seed_image    = var.krr_demo_seed_image
 }))}
@@ -114,9 +115,6 @@ spec:
           frontend: true
         secrets:
           existingSecret: ${var.bank_jwt_secret_name}
-        redis:
-          host: ${var.redis_host}
-          port: ${var.redis_port}
   destination:
     server: https://kubernetes.default.svc
     namespace: frontend
@@ -128,16 +126,9 @@ spec:
         - /spec/rules/0/backendRefs/1/weight
     - group: argoproj.io
       kind: Rollout
-      name: frontend-rollout
+      name: mak-app-rollout
       jsonPointers:
         - /spec/replicas
-        - /spec/strategy/canary/activeService
-        - /spec/strategy/canary/previewService
-        - /spec/strategy/canary/trafficRouting
-    - group: gateway.k8s.aws
-      kind: TargetGroupConfiguration
-      jqPathExpressions:
-        - .spec.defaultConfiguration.healthCheck
   syncPolicy:
     automated:
       prune: true
@@ -171,9 +162,6 @@ spec:
           frontend: false
         secrets:
           existingSecret: ${var.bank_jwt_secret_name}
-        redis:
-          host: ${var.redis_host}
-          port: ${var.redis_port}
   destination:
     server: https://kubernetes.default.svc
     namespace: backend
@@ -462,7 +450,7 @@ spec:
             create: true
             name: thanos-query
             annotations:
-              eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/side-project-thanos-s3-role"
+              eks.amazonaws.com/role-arn: "${var.thanos_role_arn}"
         storegateway:
           enabled: true
           replicaCount: 1
@@ -485,11 +473,11 @@ spec:
             # 파드에 IRSA IAM 토큰을 자동으로 마운트하도록 설정
             automountServiceAccountToken: true
             annotations:
-              eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/side-project-thanos-s3-role"
+              eks.amazonaws.com/role-arn: "${var.thanos_role_arn}"
         objstoreConfig: |-
           type: s3
           config:
-            bucket: side-project-thanos-metrics-83154bf5
+            bucket: side-project-cnpg-backup-07l03u
             endpoint: s3.ap-northeast-2.amazonaws.com
             region: ap-northeast-2
         compactor:
@@ -509,7 +497,7 @@ spec:
             create: true
             name: thanos-compactor
             annotations:
-              eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/side-project-thanos-s3-role"
+              eks.amazonaws.com/role-arn: "${var.thanos_role_arn}"
         bucketweb:
           enabled: false
         receive:

@@ -98,9 +98,9 @@ module "eks" {
       name                   = "eks-management-node"
       instance_types         = var.instance_types
       ami_type               = var.ami_type
-      min_size               = 2
-      max_size               = 3
-      desired_size           = 2
+      min_size               = 4
+      max_size               = 5
+      desired_size           = 5
       vpc_security_group_ids = var.node_security_group_ids
       # manage node는 라벨을 management로 붙임
       # karpenter가 붙을 수 있게 태그 추가 작성
@@ -128,9 +128,9 @@ module "eks" {
       name                   = "eks-db-node"
       instance_types         = ["t3.small"]
       ami_type               = var.ami_type
-      min_size               = 1
+      min_size               = 2
       max_size               = 2
-      desired_size           = 1
+      desired_size           = 2
       vpc_security_group_ids = var.node_security_group_ids
 
       labels = {

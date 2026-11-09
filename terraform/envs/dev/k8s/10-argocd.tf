@@ -26,8 +26,11 @@ data "aws_ecr_repository" "krr_demo_seed" {
   name  = "krr-demo-seed"
 }
 
-# Infra와 Kubernetes는 Terraform State를 분리하여 관리하므로,
-# Infra State에서 ElastiCache 연결 정보를 읽어 Argo CD Helm values에 자동 주입합니다.
+data "aws_iam_role" "thanos" {
+  name = "side-project-thanos-s3-role"
+}
+
+# Infra and Kubernetes use separate Terraform states.
 data "terraform_remote_state" "infra" {
   backend = "s3"
 
@@ -45,11 +48,9 @@ module "argocd_deploy" {
   aws_profile            = var.aws_profile
   grafana_admin_password = var.grafana_admin_password
   domain_name            = var.domain_name
+  thanos_role_arn        = data.aws_iam_role.thanos.arn
 
   krr_analyzer_image_repository = data.aws_ecr_repository.krr_analyzer.repository_url
-  # Redis 보류 (infra에 Redis가 생기면 주석 해제)
-  # redis_host                    = data.terraform_remote_state.infra.outputs.redis_primary_endpoint
-  # redis_port                    = data.terraform_remote_state.infra.outputs.redis_port
 
   bank_jwt_secret_name = var.enable_bank_jwt_rotation ? var.bank_jwt_kubernetes_secret_name : var.bank_jwt_current_kubernetes_secret_name
 

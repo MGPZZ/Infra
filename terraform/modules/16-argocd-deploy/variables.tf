@@ -10,23 +10,16 @@ variable "bank_jwt_secret_name" {
 }
 
 variable "aws_profile" { type = string }
+variable "thanos_role_arn" {
+  description = "IAM role ARN for Thanos and the Prometheus sidecar"
+  type        = string
+}
+
 variable "domain_name" {
   description = "The domain name for the environment"
   type        = string
 }
 
-
-variable "redis_host" {
-  description = "Sample FastAPI와 Worker가 연결할 ElastiCache Primary Endpoint"
-  type        = string
-  default     = ""
-}
-
-variable "redis_port" {
-  description = "Sample FastAPI와 Worker가 연결할 ElastiCache Port"
-  type        = number
-  default     = 6379
-}
 
 variable "krr_analyzer_image_repository" {
   description = "KRR Analyzer가 사용하는 ECR Repository URL"

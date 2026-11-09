@@ -15,7 +15,7 @@ resource "aws_iam_policy" "thanos_s3_policy" {
           "s3:GetBucketLocation"
         ]
         Resource = [
-          "arn:aws:s3:::side-project-thanos-metrics-83154bf5"
+          "arn:aws:s3:::side-project-cnpg-backup-07l03u"
         ]
       },
       {
@@ -26,7 +26,7 @@ resource "aws_iam_policy" "thanos_s3_policy" {
           "s3:DeleteObject"
         ]
         Resource = [
-          "arn:aws:s3:::side-project-thanos-metrics-83154bf5/*"
+          "arn:aws:s3:::side-project-cnpg-backup-07l03u/*"
         ]
       }
     ]

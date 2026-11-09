@@ -5,7 +5,7 @@ prometheusOperator:
   admissionWebhooks:
     patch:
       nodeSelector:
-        role: managemen
+        role: management
 
 
 kube-state-metrics:
@@ -29,7 +29,7 @@ alertmanager:
       resolve_timeout: 5m
     route:
       receiver: 'null'
-      grup_by: ['alertname']
+      group_by: ['alertname']
       group_wait: 30s
       group_interval: 5m
       repeat_interval: 12h
@@ -52,7 +52,7 @@ prometheus:
     create: true
     name: prometheus-stack-kube-prom-prometheus
     annotations:
-      eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/side-project-thanos-s3-role"
+      eks.amazonaws.com/role-arn: "${thanos_role_arn}"
   prometheusSpec:
     nodeSelector:
       role: management
