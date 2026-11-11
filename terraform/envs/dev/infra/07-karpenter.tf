@@ -31,7 +31,15 @@ resource "helm_release" "karpenter" {
 
   # Karpenter 파드를 어느 노드에 띄울지 지정
   set {
-    name  = "controller.nodeSelector.karpenter\\.sh/controller"
+    name  = "nodeSelector.role"
+    value = "management"
+  }
+  set {
+    name  = "replicas"
+    value = "2"
+  }
+  set {
+    name  = "settings.featureGates.nodeRepair"
     value = "true"
   }
   # Service account 이름 karpenter 고정

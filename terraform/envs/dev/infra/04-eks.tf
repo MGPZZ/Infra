@@ -22,6 +22,10 @@ module "side_project_eks" {
   node_group_defaults = {
     ami_type               = "AL2023_x86_64_STANDARD"
     vpc_security_group_ids = [module.security_groups.eks_node_sg_id]
+    # eks 클러스터 내부 node 자동 복구 활성화
+    node_repair_config = {
+      enabled = true
+    }
   }
 
   ebs_csi_node_selector = {

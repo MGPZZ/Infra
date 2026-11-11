@@ -78,6 +78,23 @@ spec:
       values: |
         nodeSelector:
           role: management
+        operator:
+          replicaCount: 2
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - topologyKey: kubernetes.io/hostname
+                  labelSelector:
+                    matchLabels:
+                      app: keda-operator
+        topologySpreadConstraints:
+          operator:
+            - maxSkew: 1
+              topologyKey: topology.kubernetes.io/zone
+              whenUnsatisfiable: DoNotSchedule
+              labelSelector:
+                matchLabels:
+                  app: keda-operator
   destination:
     server: https://kubernetes.default.svc
     namespace: keda

@@ -29,6 +29,9 @@ variable "node_group_defaults" {
   type = object({
     ami_type               = string
     vpc_security_group_ids = list(string)
+    node_repair_config = object({
+      enabled = bool
+    })
   })
 }
 
