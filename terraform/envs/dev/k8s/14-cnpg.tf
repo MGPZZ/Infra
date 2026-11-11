@@ -10,6 +10,7 @@ resource "helm_release" "cnpg_operator" {
   namespace        = "cnpg-system"
   create_namespace = true
   values = [<<-YAML
+    priorityClassName: "${module.argocd.priority_class_names["service-critical"]}"
     nodeSelector:
       role: management
     YAML

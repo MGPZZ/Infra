@@ -29,10 +29,12 @@ spec:
     helm:
       values: |
         ${indent(8, templatefile("${path.module}/prometheus/my-values.yaml.tpl", {
-  grafana_admin_password = var.grafana_admin_password
-  thanos_role_arn        = var.thanos_role_arn
-  enable_krr_demo_seed   = var.enable_krr_demo_seed
-  krr_demo_seed_image    = var.krr_demo_seed_image
+  grafana_admin_password            = var.grafana_admin_password
+  thanos_role_arn                   = var.thanos_role_arn
+  observability_priority_class_name = var.observability_priority_class_name
+  support_priority_class_name       = var.support_priority_class_name
+  enable_krr_demo_seed              = var.enable_krr_demo_seed
+  krr_demo_seed_image               = var.krr_demo_seed_image
 }))}
   destination:
     server: https://kubernetes.default.svc
@@ -78,6 +80,7 @@ spec:
       values: |
         nodeSelector:
           role: management
+        priorityClassName: "${var.service_priority_class_name}"
         operator:
           replicaCount: 2
           affinity:
@@ -127,6 +130,7 @@ spec:
     helm:
       values: |
         # 프론트엔드 전용 values 설정 (필요시)
+        priorityClassName: "${var.service_priority_class_name}"
         components:
           backend: false
           frontend: true
@@ -174,6 +178,7 @@ spec:
     path: charts/app
     helm:
       values: |
+        priorityClassName: "${var.service_priority_class_name}"
         components:
           backend: true
           frontend: false
@@ -237,6 +242,7 @@ spec:
     path: charts/finops
     helm:
       values: |
+        priorityClassName: "${var.support_priority_class_name}"
         image:
           repository: ${var.krr_analyzer_image_repository}
   destination:
@@ -266,6 +272,10 @@ spec:
     repoURL: https://github.com/MGPZZ/GitOps.git
     targetRevision: test_alb
     path: charts/argocd-config
+    helm:
+      values: |
+        prometheusAuth:
+          priorityClassName: "${var.support_priority_class_name}"
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
@@ -298,6 +308,9 @@ spec:
     repoURL: https://github.com/MGPZZ/GitOps.git
     targetRevision: test_alb
     path: charts/cnpg-db
+    helm:
+      values: |
+        priorityClassName: "${var.service_priority_class_name}"
   destination:
     server: https://kubernetes.default.svc
     namespace: backend
@@ -326,6 +339,9 @@ spec:
     repoURL: https://github.com/MGPZZ/GitOps.git
     targetRevision: test_alb
     path: charts/krr-data-db
+    helm:
+      values: |
+        priorityClassName: "${var.support_priority_class_name}"
   destination:
     server: https://kubernetes.default.svc
     namespace: finops
@@ -359,6 +375,7 @@ spec:
     targetRevision: "10.0.65"
     helm:
       values: |
+        priorityClassName: "${var.support_priority_class_name}"
         nodeSelector:
           role: management
   destination:
@@ -413,6 +430,9 @@ spec:
     repoURL: https://github.com/MGPZZ/GitOps.git
     targetRevision: test_alb
     path: charts/tg-gateway
+    helm:
+      values: |
+        priorityClassName: "${var.support_priority_class_name}"
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
@@ -447,6 +467,7 @@ spec:
           repository: thanos/thanos
           tag: v0.35.1
         query:
+          priorityClassName: "${var.support_priority_class_name}"
           enabled: true
           replicaCount: 1
           nodeSelector:
@@ -468,7 +489,10 @@ spec:
             name: thanos-query
             annotations:
               eks.amazonaws.com/role-arn: "${var.thanos_role_arn}"
+        queryFrontend:
+          priorityClassName: "${var.support_priority_class_name}"
         storegateway:
+          priorityClassName: "${var.support_priority_class_name}"
           enabled: true
           replicaCount: 1
           nodeSelector:
@@ -498,6 +522,7 @@ spec:
             endpoint: s3.ap-northeast-2.amazonaws.com
             region: ap-northeast-2
         compactor:
+          priorityClassName: "${var.support_priority_class_name}"
           # enabled: false
           enabled: true
           nodeSelector:

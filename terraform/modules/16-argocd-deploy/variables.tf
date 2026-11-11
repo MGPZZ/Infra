@@ -15,6 +15,21 @@ variable "thanos_role_arn" {
   type        = string
 }
 
+variable "observability_priority_class_name" {
+  description = "PriorityClass for metric collection and alerting pods."
+  type        = string
+}
+
+variable "service_priority_class_name" {
+  description = "PriorityClass for service and management pods."
+  type        = string
+}
+
+variable "support_priority_class_name" {
+  description = "PriorityClass for analysis, dashboards and supporting pods."
+  type        = string
+}
+
 variable "domain_name" {
   description = "The domain name for the environment"
   type        = string

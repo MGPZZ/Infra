@@ -1,20 +1,27 @@
 # Prometheus/Grafana/Alertmanager 커스텀 설정
+prometheus-node-exporter:
+  priorityClassName: "${observability_priority_class_name}"
+
 prometheusOperator:
+  priorityClassName: "${observability_priority_class_name}"
   nodeSelector:
     role: management
   admissionWebhooks:
     patch:
+      priorityClassName: "${observability_priority_class_name}"
       nodeSelector:
         role: management
 
 
 kube-state-metrics:
+  priorityClassName: "${observability_priority_class_name}"
   nodeSelector:
     role: management
 
 
 alertmanager:
   alertmanagerSpec:
+    priorityClassName: "${observability_priority_class_name}"
     nodeSelector:
       role: management
     resources:
@@ -54,6 +61,7 @@ prometheus:
     annotations:
       eks.amazonaws.com/role-arn: "${thanos_role_arn}"
   prometheusSpec:
+    priorityClassName: "${observability_priority_class_name}"
     nodeSelector:
       role: management
     # Helm release name에 의존하지 않고 명시적인 라벨로 ServiceMonitor를 선택합니다.
@@ -96,6 +104,7 @@ prometheus:
             mountPath: /prometheus
 %{ endif ~}
 grafana:
+  priorityClassName: "${support_priority_class_name}"
   nodeSelector:
     role: management
   # persistence가 ReadWriteOnce PVC라 기본 RollingUpdate 전략(새 파드를 먼저 띄우고

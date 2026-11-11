@@ -9,6 +9,12 @@ module "argocd" {
   source      = "../../../modules/15-argocd"
   aws_profile = var.aws_profile
 
+  priority_classes = {
+    "node-observability" = 30 # 3순위
+    "service-critical"   = 20 # 4순위
+    "support-workload"   = 10 # 5순위
+  }
+
   # Argo CD creates Services, so the AWS LBC admission webhook must be ready.
   depends_on = [helm_release.aws_lb_controller]
 }
@@ -45,10 +51,13 @@ data "terraform_remote_state" "infra" {
 module "argocd_deploy" {
   source = "../../../modules/16-argocd-deploy"
 
-  aws_profile            = var.aws_profile
-  grafana_admin_password = var.grafana_admin_password
-  domain_name            = var.domain_name
-  thanos_role_arn        = data.aws_iam_role.thanos.arn
+  aws_profile                       = var.aws_profile
+  grafana_admin_password            = var.grafana_admin_password
+  domain_name                       = var.domain_name
+  thanos_role_arn                   = data.aws_iam_role.thanos.arn
+  observability_priority_class_name = module.argocd.priority_class_names["node-observability"]
+  service_priority_class_name       = module.argocd.priority_class_names["service-critical"]
+  support_priority_class_name       = module.argocd.priority_class_names["support-workload"]
 
   krr_analyzer_image_repository = data.aws_ecr_repository.krr_analyzer.repository_url
 

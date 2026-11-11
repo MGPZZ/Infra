@@ -9,7 +9,10 @@ resource "helm_release" "argocd" {
   namespace        = "argocd"
   create_namespace = true
 
-  values = [file("${path.module}/my-values.yaml")]
+  values = [
+    file("${path.module}/my-values.yaml"),
+    yamlencode({ global = { priorityClassName = kubernetes_priority_class_v1.workload["service-critical"].metadata[0].name } })
+  ]
 
   # 관리자 비밀번호 Hash를 bcrypt()로 매 Plan마다 다시 만들면 salt가 달라져
   # 실제 설정 변경이 없어도 Helm Release가 계속 변경 대상으로 표시됩니다.
@@ -35,6 +38,7 @@ resource "helm_release" "argo_rollouts" {
   # 실제 적용 시 컨트롤러 Pod가 재생성되므로 별도 배포 승인이 필요합니다.
   values = [<<-YAML
     controller:
+      priorityClassName: "${kubernetes_priority_class_v1.workload["service-critical"].metadata[0].name}"
       nodeSelector:
         role: management
       initContainers:
@@ -69,4 +73,19 @@ resource "helm_release" "argo_rollouts" {
   depends_on = [
     helm_release.argocd
   ]
+}
+
+resource "kubernetes_priority_class_v1" "workload" {
+  for_each = var.priority_classes
+  metadata {
+    name = each.key
+  }
+
+  value             = each.value
+  global_default    = false
+  preemption_policy = "PreemptLowerPriority"
+}
+
+output "priority_class_names" {
+  value = { for name, priority_class in kubernetes_priority_class_v1.workload : name => priority_class.metadata[0].name }
 }
