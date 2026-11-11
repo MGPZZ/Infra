@@ -32,20 +32,30 @@ module "side_project_eks" {
     # 매니지 노드 생성
     eks-management-node = {
       instance_types = ["t3.small"]
-      min_size       = 4
+      min_size       = 2
       max_size       = 5
-      desired_size   = 5
+      desired_size   = 2
       labels = {
         role                      = "management"
         "karpenter.sh/controller" = "true"
       }
     }
+    # 모니터링 노드 생성
+    eks-monitoring-node = {
+      instance_types = ["t3.small"]
+      min_size       = 2
+      max_size       = 5
+      desired_size   = 2
+      labels = {
+        role = "monitoring"
+      }
+    }
     # 데이터베이스 노드 생성
     eks-db-node = {
       instance_types = ["t3.small"]
-      min_size       = 2
-      max_size       = 2
-      desired_size   = 2
+      min_size       = 3
+      max_size       = 5
+      desired_size   = 3
       labels = {
         role = "db"
       }
@@ -60,9 +70,9 @@ module "side_project_eks" {
     # 워커 노드 생성
     eks-worker-node = {
       instance_types = ["t3.small"]
-      min_size       = 4
-      max_size       = 4
-      desired_size   = 4
+      min_size       = 2
+      max_size       = 5
+      desired_size   = 2
       labels = {
         role = "worker"
       }
