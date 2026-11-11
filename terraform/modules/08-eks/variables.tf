@@ -29,7 +29,6 @@ variable "node_group_defaults" {
   type = object({
     ami_type               = string
     vpc_security_group_ids = list(string)
-    iam_role_additional_policies = map(string)
   })
 }
 
@@ -40,6 +39,7 @@ variable "node_groups" {
     max_size                     = number
     desired_size                 = number
     labels                       = map(string)
+    iam_role_additional_policies = optional(map(string), {})
     taints = optional(map(object({
       key    = string
       value  = optional(string)
@@ -57,6 +57,11 @@ variable "node_groups" {
     ])
     error_message = "Each node group must have an instance type and satisfy 0 <= min_size <= desired_size <= max_size."
   }
+}
+
+variable "ebs_csi_node_selector" {
+  description = "Nodes eligible for EBS mounts; use an empty selector during migration before restricting storage workloads."
+  type        = map(string)
 }
 
 variable "admin_users" {

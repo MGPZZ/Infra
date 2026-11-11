@@ -22,15 +22,20 @@ module "side_project_eks" {
   node_group_defaults = {
     ami_type               = "AL2023_x86_64_STANDARD"
     vpc_security_group_ids = [module.security_groups.eks_node_sg_id]
-    iam_role_additional_policies = {
-      AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
-    }
+  }
+
+  ebs_csi_node_selector = {
+    "ebs-csi-enabled" = "true"
   }
 
   # 노드 그룹 생성
   node_groups = {
     # 매니지 노드 생성
     eks-management-node = {
+      # EBS CSI Controller가 실행되는 노드에만 EBS 관리 권한을 부여합니다.
+      iam_role_additional_policies = {
+        AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+      }
       instance_types = ["t3.small"]
       min_size       = 2
       max_size       = 5
@@ -47,7 +52,8 @@ module "side_project_eks" {
       max_size       = 5
       desired_size   = 2
       labels = {
-        role = "monitoring"
+        role              = "monitoring"
+        "ebs-csi-enabled" = "true"
       }
     }
     # 데이터베이스 노드 생성
@@ -57,7 +63,8 @@ module "side_project_eks" {
       max_size       = 5
       desired_size   = 3
       labels = {
-        role = "db"
+        role              = "db"
+        "ebs-csi-enabled" = "true"
       }
       taints = {
         dedicated = {

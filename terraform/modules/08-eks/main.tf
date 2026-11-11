@@ -29,7 +29,7 @@ module "eks" {
           nodeAffinity = {
             # 조건에 맞지 않는 노드에는 스케쥴링 되지 않음
             requiredDuringSchedulingIgnoredDuringExecution = {
-              nodeSelectorTerms = [ 
+              nodeSelectorTerms = [
                 {
                   # 스케쥴링 되는 노드 조건 management 노드
                   matchExpressions = [
@@ -73,15 +73,32 @@ module "eks" {
         ]
       })
     }
-    kube-proxy         = { resolve_conflicts_on_create = "OVERWRITE" }
-    vpc-cni            = { resolve_conflicts_on_create = "OVERWRITE" }
+    kube-proxy = { resolve_conflicts_on_create = "OVERWRITE" }
+    # t3.small 기준 pod 생성 기준이 최대 11개로 고정되어있는데 cpu와 memory 값이 남아도 11개가 고정되어있어서 생성 못하는 부분 발견
+    # 밑의 vpc-cni 부분은 해당 부분에 대한 설정을 완화하는 블럭
+    vpc-cni = {       # pod의 네트워크 설정 변경
+      # node가 뜨기 전 미리 설정    
+      before_compute              = true
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
+      configuration_values = jsonencode({
+        env = {
+          # pod 개수 제한 해제
+          ENABLE_PREFIX_DELEGATION = "true"
+        }
+      })
+    }
     aws-ebs-csi-driver = {
       resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
       configuration_values = jsonencode({
         controller = {
           nodeSelector = {
             role = "management"
           }
+        }
+        node = {
+          nodeSelector = var.ebs_csi_node_selector
         }
       })
     }
