@@ -12,17 +12,62 @@ module "side_project_eks" {
     module.side_project_private_subnet_cluster_c.subnet_id
   ]
 
-  node_security_group_ids = [module.security_groups.eks_node_sg_id]
   node_security_group_tags = {
     "karpenter.sh/discovery" = "side-project-eks"
   }
 
-  instance_types = ["t3.small"]
-  ami_type       = "AL2023_x86_64_STANDARD"
-  min_size       = 4
-  max_size       = 4
-  desired_size   = 4
-  admin_users    = var.eks_admin_users
+  admin_users = var.eks_admin_users
+
+  # 공통 노드 설정. AMI 선택과 초기화·자원 보호 기준은 EKS 기본값을 사용합니다.
+  node_group_defaults = {
+    ami_type               = "AL2023_x86_64_STANDARD"
+    vpc_security_group_ids = [module.security_groups.eks_node_sg_id]
+    iam_role_additional_policies = {
+      AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+    }
+  }
+
+  # 노드 그룹 생성
+  node_groups = {
+    # 매니지 노드 생성
+    eks-management-node = {
+      instance_types = ["t3.small"]
+      min_size       = 4
+      max_size       = 5
+      desired_size   = 5
+      labels = {
+        role                      = "management"
+        "karpenter.sh/controller" = "true"
+      }
+    }
+    # 데이터베이스 노드 생성
+    eks-db-node = {
+      instance_types = ["t3.small"]
+      min_size       = 2
+      max_size       = 2
+      desired_size   = 2
+      labels = {
+        role = "db"
+      }
+      taints = {
+        dedicated = {
+          key    = "dedicated"
+          value  = "db"
+          effect = "NO_SCHEDULE"
+        }
+      }
+    }
+    # 워커 노드 생성
+    eks-worker-node = {
+      instance_types = ["t3.small"]
+      min_size       = 4
+      max_size       = 4
+      desired_size   = 4
+      labels = {
+        role = "worker"
+      }
+    }
+  }
 
 }
 

@@ -87,65 +87,9 @@ module "eks" {
     }
   }
 
-  eks_managed_node_group_defaults = {
-    iam_role_additional_policies = {
-      AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
-    }
-  }
+  eks_managed_node_group_defaults = var.node_group_defaults
 
-  eks_managed_node_groups = {
-    eks-management-node = {
-      name                   = "eks-management-node"
-      instance_types         = var.instance_types
-      ami_type               = var.ami_type
-      min_size               = 4
-      max_size               = 5
-      desired_size           = 5
-      vpc_security_group_ids = var.node_security_group_ids
-      # manage node는 라벨을 management로 붙임
-      # karpenter가 붙을 수 있게 태그 추가 작성
-      labels = {
-        role                      = "management"
-        "karpenter.sh/controller" = "true"
-      }
-    }
-
-    eks-worker-node = {
-      name                   = "eks-worker-node"
-      instance_types         = var.instance_types
-      ami_type               = var.ami_type
-      min_size               = var.min_size
-      max_size               = var.max_size
-      desired_size           = var.desired_size
-      vpc_security_group_ids = var.node_security_group_ids
-      # worker node는 라벨을 worker로 붙임
-      labels = {
-        role = "worker"
-      }
-    }
-
-    eks-db-node = {
-      name                   = "eks-db-node"
-      instance_types         = ["t3.small"]
-      ami_type               = var.ami_type
-      min_size               = 2
-      max_size               = 2
-      desired_size           = 2
-      vpc_security_group_ids = var.node_security_group_ids
-
-      labels = {
-        role = "db"
-      }
-
-      taints = {
-        dedicated = {
-          key    = "dedicated"
-          value  = "db"
-          effect = "NO_SCHEDULE"
-        }
-      }
-    }
-  }
+  eks_managed_node_groups = var.node_groups
 
   access_entries = {
     for arn in var.admin_users : arn => {

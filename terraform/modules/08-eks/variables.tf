@@ -18,41 +18,45 @@ variable "subnet_ids" {
   type        = list(string)
 }
 
-variable "node_security_group_ids" {
-  description = "Additional security group IDs for worker nodes"
-  type        = list(string)
-  default     = []
-}
-
 variable "node_security_group_tags" {
   description = "Tags to apply to the EKS shared node security group"
   type        = map(string)
   default     = {}
 }
 
-variable "instance_types" {
-  description = "EC2 instance types for node group"
-  type        = list(string)
+variable "node_group_defaults" {
+  description = "Common managed node settings defined by the environment. EKS manages AMI selection and bootstrap defaults."
+  type = object({
+    ami_type               = string
+    vpc_security_group_ids = list(string)
+    iam_role_additional_policies = map(string)
+  })
 }
 
-variable "ami_type" {
-  description = "AMI type for node group"
-  type        = string
-}
+variable "node_groups" {
+  type = map(object({
+    instance_types               = list(string)
+    min_size                     = number
+    max_size                     = number
+    desired_size                 = number
+    labels                       = map(string)
+    taints = optional(map(object({
+      key    = string
+      value  = optional(string)
+      effect = string
+    })), {})
+  }))
 
-variable "min_size" {
-  description = "Minimum number of nodes"
-  type        = number
-}
-
-variable "max_size" {
-  description = "Maximum number of nodes"
-  type        = number
-}
-
-variable "desired_size" {
-  description = "Desired number of nodes"
-  type        = number
+  validation {
+    condition = alltrue([
+      for group in values(var.node_groups) :
+      length(group.instance_types) > 0 &&
+      group.min_size >= 0 &&
+      group.min_size <= group.desired_size &&
+      group.desired_size <= group.max_size
+    ])
+    error_message = "Each node group must have an instance type and satisfy 0 <= min_size <= desired_size <= max_size."
+  }
 }
 
 variable "admin_users" {
