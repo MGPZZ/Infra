@@ -61,6 +61,8 @@ YAML
 }
 
 resource "kubectl_manifest" "keda" {
+  # Wait for consumer finalization before tearing down KEDA.
+  wait      = true
   yaml_body = <<YAML
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -113,7 +115,9 @@ YAML
 
 # 1. Frontend 애플리케이션 (프론트엔드 관련 리소스 담당 네임스페이스)
 resource "kubectl_manifest" "frontend" {
-  yaml_body = <<YAML
+  depends_on = [kubectl_manifest.keda]
+  wait       = true
+  yaml_body  = <<YAML
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -162,7 +166,9 @@ YAML
 
 # 2. Backend 애플리케이션 (마이크로서비스 및 DB 연동 서비스 담당)
 resource "kubectl_manifest" "backend" {
-  yaml_body = <<YAML
+  depends_on = [kubectl_manifest.keda]
+  wait       = true
+  yaml_body  = <<YAML
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
