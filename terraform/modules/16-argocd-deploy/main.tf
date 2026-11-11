@@ -471,7 +471,7 @@ spec:
           enabled: true
           replicaCount: 1
           nodeSelector:
-            role: management
+            role: monitoring
           # Thanos Query 메모리 증설 (2Gi)
           resources:
             requests:
@@ -491,17 +491,19 @@ spec:
               eks.amazonaws.com/role-arn: "${var.thanos_role_arn}"
         queryFrontend:
           priorityClassName: "${var.support_priority_class_name}"
+          nodeSelector:
+            role: monitoring
         storegateway:
           priorityClassName: "${var.support_priority_class_name}"
           enabled: true
           replicaCount: 1
           nodeSelector:
-            role: management
+            role: monitoring
           # StoreGateway 메모리 증설 (2Gi) 
           resources:
             requests:
               cpu: 500m
-              memory: 1Gi
+              memory: 512Mi
             limits:
               cpu: 1000m
               memory: 2Gi
@@ -526,7 +528,7 @@ spec:
           # enabled: false
           enabled: true
           nodeSelector:
-            role: management
+            role: monitoring
           retentionResolutionRaw: 30d   # 원본(상세) 데이터 30일 보존 후 삭제
           retentionResolution5m: 30d    # 5분 축소 데이터 30일 보존
           retentionResolution1h: 30d   # 1시간 축소 데이터 30일 보존

@@ -5,25 +5,25 @@ prometheus-node-exporter:
 prometheusOperator:
   priorityClassName: "${observability_priority_class_name}"
   nodeSelector:
-    role: management
+    role: monitoring
   admissionWebhooks:
     patch:
       priorityClassName: "${observability_priority_class_name}"
       nodeSelector:
-        role: management
+        role: monitoring
 
 
 kube-state-metrics:
   priorityClassName: "${observability_priority_class_name}"
   nodeSelector:
-    role: management
+    role: monitoring
 
 
 alertmanager:
   alertmanagerSpec:
     priorityClassName: "${observability_priority_class_name}"
     nodeSelector:
-      role: management
+      role: monitoring
     resources:
       requests:
         cpu: 50m
@@ -63,7 +63,7 @@ prometheus:
   prometheusSpec:
     priorityClassName: "${observability_priority_class_name}"
     nodeSelector:
-      role: management
+      role: monitoring
     # Helm release name에 의존하지 않고 명시적인 라벨로 ServiceMonitor를 선택합니다.
     serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorSelector: {}
@@ -106,7 +106,7 @@ prometheus:
 grafana:
   priorityClassName: "${support_priority_class_name}"
   nodeSelector:
-    role: management
+    role: monitoring
   # persistence가 ReadWriteOnce PVC라 기본 RollingUpdate 전략(새 파드를 먼저 띄우고
   # 옛 파드를 나중에 지움)과 근본적으로 충돌합니다 - 새 파드가 볼륨을 못 붙잡아
   # Multi-Attach 에러로 영원히 Pending 상태가 되고, ArgoCD도 그 Deployment가
@@ -114,9 +114,8 @@ grafana:
   # 먼저 내리고 나서 새 파드를 띄우게 합니다.
   strategy:
     type: Recreate
-  # Reflector가 krr-data-db-app Secret(finops)을 이 네임스페이스(prometheus)로
-  # 복제해준 것을 env var로 주입합니다. CNPG가 비밀번호를 재발급해도 Reflector가
-  # 복제본을 계속 갱신하므로, 여기서는 항상 최신 값을 읽게 됩니다.
+  # Reflector가 finops의 Secret을 monitoring으로 복사합니다.
+  # Secret 변경 후 환경변수에 반영하려면 Grafana Pod를 재생성해야 합니다.
   envValueFrom:
     KRR_DB_USER:
       secretKeyRef:

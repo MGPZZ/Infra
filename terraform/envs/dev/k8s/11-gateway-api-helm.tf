@@ -49,6 +49,10 @@ resource "helm_release" "aws_lb_controller" {
 
   set = [
     {
+      name  = "nodeSelector.role"
+      value = "management"
+    },
+    {
       name  = "clusterName"
       value = "side-project-eks"
     },
