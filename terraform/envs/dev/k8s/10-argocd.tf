@@ -8,16 +8,21 @@
 module "argocd" {
   source      = "../../../modules/15-argocd"
   aws_profile = var.aws_profile
+
+  priority_classes = {
+    "node-observability" = 30 # 3순위
+    "service-critical"   = 20 # 4순위
+    "support-workload"   = 10 # 5순위
+  }
+
+  # Argo CD creates Services, so the AWS LBC admission webhook must be ready.
+  depends_on = [helm_release.aws_lb_controller]
 }
 
 
 
-data "aws_ecr_repository" "finops_analyzer" {
-  name = "finops-analyzer"
-}
-
-data "aws_ecr_repository" "chronos_model" {
-  name = "chronos-model"
+data "aws_ecr_repository" "krr_analyzer" {
+  name = "krr-analyzer"
 }
 
 # enable_krr_demo_seed가 false면 이 ECR repo가 아직 없어도(init 레이어 미적용) apply가
@@ -27,42 +32,69 @@ data "aws_ecr_repository" "krr_demo_seed" {
   name  = "krr-demo-seed"
 }
 
-# Infra와 Kubernetes는 Terraform State를 분리하여 관리하므로,
-# Infra State에서 ElastiCache 연결 정보를 읽어 Argo CD Helm values에 자동 주입합니다.
+data "aws_iam_role" "thanos" {
+  name = "side-project-thanos-s3-role"
+}
+
+data "aws_iam_role" "cnpg" {
+  name = "side-project-cnpg-s3-role"
+}
+
+# Infra and Kubernetes use separate Terraform states.
 data "terraform_remote_state" "infra" {
   backend = "s3"
 
   config = {
-    bucket  = "tfstate-bucket-95ada58e"
-    key     = "dev-infra/terraform.tfstate"
+    bucket  = "tfstate-bucket-229a9274"
+    key     = "dev/terraform.tfstate"
     region  = "ap-northeast-2"
     profile = var.aws_profile
+  }
+}
+
+# Application CRD가 준비된 뒤에 모든 Argo CD Application을 배포합니다.
+data "kubectl_manifest" "argocd_application_crd" {
+  depends_on = [module.argocd]
+
+  api_version = "apiextensions.k8s.io/v1"
+  kind        = "CustomResourceDefinition"
+  name        = "applications.argoproj.io"
+
+  wait_for {
+    condition {
+      type   = "Established"
+      status = "True"
+    }
+  }
+
+  timeouts {
+    read = "5m"
   }
 }
 
 module "argocd_deploy" {
   source = "../../../modules/16-argocd-deploy"
 
-  aws_profile                      = var.aws_profile
-  grafana_admin_password           = var.grafana_admin_password
-  domain_name                      = var.domain_name
+  aws_profile                       = var.aws_profile
+  grafana_admin_password            = var.grafana_admin_password
+  domain_name                       = var.domain_name
+  thanos_role_arn                   = data.aws_iam_role.thanos.arn
+  cnpg_role_arn                     = data.aws_iam_role.cnpg.arn
+  observability_priority_class_name = module.argocd.priority_class_names["node-observability"]
+  service_priority_class_name       = module.argocd.priority_class_names["service-critical"]
+  support_priority_class_name       = module.argocd.priority_class_names["support-workload"]
 
-  finops_analyzer_image_repository = data.aws_ecr_repository.finops_analyzer.repository_url
-  chronos_model_image_repository   = data.aws_ecr_repository.chronos_model.repository_url
-  redis_host        = data.terraform_remote_state.infra.outputs.redis_primary_endpoint
-  redis_port        = data.terraform_remote_state.infra.outputs.redis_port
+  krr_analyzer_image_repository = data.aws_ecr_repository.krr_analyzer.repository_url
 
   bank_jwt_secret_name = var.enable_bank_jwt_rotation ? var.bank_jwt_kubernetes_secret_name : var.bank_jwt_current_kubernetes_secret_name
 
   enable_krr_demo_seed = var.enable_krr_demo_seed
   krr_demo_seed_image  = var.enable_krr_demo_seed ? "${data.aws_ecr_repository.krr_demo_seed[0].repository_url}:latest" : ""
 
-  # Create: Gateway -> cleanup guard -> Argo CD applications.
-  # Destroy: Argo CD applications -> cleanup wait -> Gateway.
   depends_on = [
     module.argocd,
+    data.kubectl_manifest.argocd_application_crd,
     kubectl_manifest.ebs_gp3_storage_class,
-    kubernetes_secret_v1.bank_jwt,
-    time_sleep.wait_for_gateway_cleanup
+    kubernetes_secret_v1.bank_jwt
   ]
 }

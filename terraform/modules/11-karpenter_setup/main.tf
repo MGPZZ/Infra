@@ -37,6 +37,17 @@ resource "aws_iam_role_policy" "karpenter_list_instance_profiles" {
         Effect   = "Allow"
         Action   = ["iam:ListInstanceProfiles"]
         Resource = "*"
+      },
+      {
+        Sid      = "AllowCreateSpotServiceLinkedRole"
+        Effect   = "Allow"
+        Action   = ["iam:CreateServiceLinkedRole"]
+        Resource = "arn:aws:iam::*:role/aws-service-role/spot.amazonaws.com/AWSServiceRoleForEC2Spot"
+        Condition = {
+          StringEquals = {
+            "iam:AWSServiceName" = "spot.amazonaws.com"
+          }
+        }
       }
     ]
   })

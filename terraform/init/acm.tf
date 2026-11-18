@@ -1,13 +1,7 @@
-variable "domain_name" {
-  description = "사용할 도메인 이름"
-  type        = string
-  default     = "tuby.shop"
+data "aws_route53_zone" "this" {
+  name         = var.domain_name
+  private_zone = false
 }
-
-# data "aws_route53_zone" "this" {
-#   name         = var.domain_name
-#   private_zone = false
-# }
 
 resource "aws_acm_certificate" "this" {
   domain_name               = var.domain_name
@@ -33,8 +27,7 @@ resource "aws_route53_record" "cert_validation" {
   records         = [each.value.record]
   ttl             = 60
   type            = each.value.type
-  # zone_id         = data.aws_route53_zone.this.zone_id
-  zone_id         = "Z08567822Q960IYVUJXT0"
+  zone_id         = data.aws_route53_zone.this.zone_id
 }
 
 resource "aws_acm_certificate_validation" "this" {
