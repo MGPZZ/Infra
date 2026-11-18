@@ -1,9 +1,8 @@
-## Description
-Describe your changes here.
+## 변경 내용
+<!-- 무엇을 왜 변경했는지 작성해주세요. -->
 
-## Related Issue
-Fixes # (issue number)
+## 관련 이슈
+<!-- 예: Closes #123. 관련 이슈가 없으면 '없음'으로 작성해주세요. -->
 
-## Checklist
-- [ ] I have tested my changes
-- [ ] Code follows project standards
+## 확인 결과
+<!-- 테스트나 검증 결과를 작성해주세요. 미실행 시 이유를 적어주세요. -->

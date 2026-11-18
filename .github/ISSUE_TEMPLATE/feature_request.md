@@ -1,14 +1,16 @@
 ---
-name: Feature request
-about: Suggest an idea for this project
-title: ''
+name: 기능 및 개선 요청
+about: 새로운 기능이나 개선할 작업을 기록합니다.
+title: '[FEAT] '
 labels: enhancement
 assignees: ''
-
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is.
+## 작업 배경
+<!-- 이 작업이 필요한 이유를 작성해주세요. -->
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+## 작업 내용
+- [ ] <!-- 작업 항목을 작성해주세요. -->
+
+## 완료 기준
+<!-- 어떤 상태가 되면 작업을 완료할 수 있는지 작성해주세요. -->
