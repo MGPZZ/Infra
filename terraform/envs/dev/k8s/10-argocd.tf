@@ -36,6 +36,10 @@ data "aws_iam_role" "thanos" {
   name = "side-project-thanos-s3-role"
 }
 
+data "aws_iam_role" "cnpg" {
+  name = "side-project-cnpg-s3-role"
+}
+
 # Infra and Kubernetes use separate Terraform states.
 data "terraform_remote_state" "infra" {
   backend = "s3"
@@ -48,6 +52,26 @@ data "terraform_remote_state" "infra" {
   }
 }
 
+# Application CRD가 준비된 뒤에 모든 Argo CD Application을 배포합니다.
+data "kubectl_manifest" "argocd_application_crd" {
+  depends_on = [module.argocd]
+
+  api_version = "apiextensions.k8s.io/v1"
+  kind        = "CustomResourceDefinition"
+  name        = "applications.argoproj.io"
+
+  wait_for {
+    condition {
+      type   = "Established"
+      status = "True"
+    }
+  }
+
+  timeouts {
+    read = "5m"
+  }
+}
+
 module "argocd_deploy" {
   source = "../../../modules/16-argocd-deploy"
 
@@ -55,6 +79,7 @@ module "argocd_deploy" {
   grafana_admin_password            = var.grafana_admin_password
   domain_name                       = var.domain_name
   thanos_role_arn                   = data.aws_iam_role.thanos.arn
+  cnpg_role_arn                     = data.aws_iam_role.cnpg.arn
   observability_priority_class_name = module.argocd.priority_class_names["node-observability"]
   service_priority_class_name       = module.argocd.priority_class_names["service-critical"]
   support_priority_class_name       = module.argocd.priority_class_names["support-workload"]
@@ -68,6 +93,7 @@ module "argocd_deploy" {
 
   depends_on = [
     module.argocd,
+    data.kubectl_manifest.argocd_application_crd,
     kubectl_manifest.ebs_gp3_storage_class,
     kubernetes_secret_v1.bank_jwt
   ]

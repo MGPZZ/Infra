@@ -4,14 +4,7 @@ terraform {
   }
 }
 
-# Argo CD 설치 직후 Application CRD가 등록될 시간을 확보하기 위해 30초 대기합니다.
-resource "time_sleep" "wait_for_argocd_application_crd" {
-  create_duration = "30s"
-
-}
-
 resource "kubectl_manifest" "prometheus_stack" {
-  depends_on = [time_sleep.wait_for_argocd_application_crd]
   yaml_body = <<YAML
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -317,6 +310,8 @@ spec:
     helm:
       values: |
         priorityClassName: "${var.service_priority_class_name}"
+        backup:
+          roleArn: "${var.cnpg_role_arn}"
   destination:
     server: https://kubernetes.default.svc
     namespace: backend
@@ -348,6 +343,8 @@ spec:
     helm:
       values: |
         priorityClassName: "${var.support_priority_class_name}"
+        backup:
+          roleArn: "${var.cnpg_role_arn}"
   destination:
     server: https://kubernetes.default.svc
     namespace: finops
@@ -526,7 +523,7 @@ spec:
         objstoreConfig: |-
           type: s3
           config:
-            bucket: side-project-cnpg-backup-07l03u
+            bucket: side-project-thanos-metrics-83154bf5
             endpoint: s3.ap-northeast-2.amazonaws.com
             region: ap-northeast-2
         compactor:

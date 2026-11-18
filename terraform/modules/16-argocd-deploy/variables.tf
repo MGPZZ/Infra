@@ -15,6 +15,11 @@ variable "thanos_role_arn" {
   type        = string
 }
 
+variable "cnpg_role_arn" {
+  description = "IAM role ARN for CNPG service and KRR database backups"
+  type        = string
+}
+
 variable "observability_priority_class_name" {
   description = "PriorityClass for metric collection and alerting pods."
   type        = string

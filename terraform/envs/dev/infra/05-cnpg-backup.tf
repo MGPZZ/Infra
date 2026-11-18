@@ -37,7 +37,7 @@ module "cnpg_irsa" {
   oidc_providers = {
     main = {
       provider_arn               = module.side_project_eks.oidc_provider_arn
-      namespace_service_accounts = ["default:cnpg-sa", "finops:krr-data-db"]
+      namespace_service_accounts = ["backend:side-project-db", "finops:krr-data-db"]
     }
   }
 

@@ -74,17 +74,17 @@ module "eks" {
       })
     }
     kube-proxy = { resolve_conflicts_on_create = "OVERWRITE" }
-    # t3.small 기준 pod 생성 기준이 최대 11개로 고정되어있는데 cpu와 memory 값이 남아도 11개가 고정되어있어서 생성 못하는 부분 발견
-    # 밑의 vpc-cni 부분은 해당 부분에 대한 설정을 완화하는 블럭
-    vpc-cni = {       # pod의 네트워크 설정 변경
-      # node가 뜨기 전 미리 설정    
+    vpc-cni = {
+      # node가 뜨기 전 미리 설정
       before_compute              = true
       resolve_conflicts_on_create = "OVERWRITE"
       resolve_conflicts_on_update = "OVERWRITE"
       configuration_values = jsonencode({
         env = {
-          # pod 개수 제한 해제
           ENABLE_PREFIX_DELEGATION = "true"
+          # 예비 prefix 1개 유지 대신 노드별 여유 Pod IP가 2개 미만이면 보충합니다.
+          WARM_PREFIX_TARGET = "0"
+          WARM_IP_TARGET     = "2"
         }
       })
     }

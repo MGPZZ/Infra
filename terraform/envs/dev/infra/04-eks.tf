@@ -4,6 +4,12 @@
 module "side_project_eks" {
   source = "../../../modules/08-eks"
 
+  # EKS의 첫 ENI가 생성되기 전에 개별 IP와 Pod prefix 영역을 분리합니다.
+  depends_on = [
+    module.side_project_private_subnet_cluster_a,
+    module.side_project_private_subnet_cluster_c,
+  ]
+
   cluster_name    = "side-project-eks"
   cluster_version = "1.36"
   vpc_id          = module.side_project_vpc.vpc_id
