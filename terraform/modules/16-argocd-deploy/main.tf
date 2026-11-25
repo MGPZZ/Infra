@@ -28,6 +28,7 @@ spec:
   support_priority_class_name       = var.support_priority_class_name
   enable_krr_demo_seed              = var.enable_krr_demo_seed
   krr_demo_seed_image               = var.krr_demo_seed_image
+  nat_controller_webhook_secret     = var.nat_controller.webhook_secret_name
 }))}
   destination:
     server: https://kubernetes.default.svc
@@ -50,6 +51,92 @@ spec:
     name: prometheus-stack-kube-prom-admission
     jsonPointers:
     - /webhooks/0/clientConfig/caBundle
+YAML
+}
+
+# NAT Controller를 manage namespace에 배포
+resource "kubectl_manifest" "nat_controller" {
+  yaml_body = yamlencode({
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata = {
+      name       = "nat-controller"
+      namespace  = "argocd"
+      finalizers = ["resources-finalizer.argocd.argoproj.io"]
+    }
+    spec = {
+      project = "default"
+      source = {
+        repoURL        = "https://github.com/MGPZZ/GitOps.git"
+        targetRevision = "test_alb"
+        path           = "charts/nat-controller"
+        helm = {
+          releaseName = "nat-controller"
+          values = yamlencode({
+            image             = { repository = var.nat_controller.image_repository }
+            roleArn           = var.nat_controller.role_arn
+            config            = var.nat_controller.config
+            webhookSecretName = var.nat_controller.webhook_secret_name
+            tokenVersion      = var.nat_controller.token_version
+          })
+        }
+      }
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = "manage"
+      }
+      syncPolicy = {
+        automated   = { prune = true, selfHeal = true }
+        syncOptions = ["ServerSideApply=true"]
+      }
+    }
+  })
+}
+
+# Blackbox Exporter 차트를 배포할 Argo CD Application
+resource "kubectl_manifest" "blackbox_exporter" {
+  # Prometheus Application을 먼저 등록
+  depends_on = [kubectl_manifest.prometheus_stack]
+
+  # Argo CD에 전달할 Application 정의
+  yaml_body = <<YAML
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+# Application 이름과 삭제 시 하위 리소스 정리 설정
+metadata:
+  name: blackbox-exporter
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  # 배포할 Git 저장소, 브랜치와 차트 경로
+  source:
+    repoURL: https://github.com/MGPZZ/GitOps.git
+    targetRevision: test_alb
+    path: charts/blackbox-exporter
+    # Helm 배포 이름과 기존 모니터링 우선순위 전달
+    helm:
+      releaseName: blackbox-exporter
+      values: |
+        priorityClassName: "${var.observability_priority_class_name}"
+        targets: ${jsonencode(var.nat_controller.config.probe_targets)}
+        recoveryTargets: ${jsonencode(var.nat_controller.config.recovery_probe_targets)}
+  # 현재 클러스터의 monitoring namespace에 배포
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  # Git 변경 사항과 클러스터 상태를 자동 동기화
+  syncPolicy:
+    automated:
+      # Git에서 제거된 리소스 정리
+      prune: true
+      # 클러스터에서 변경된 설정을 Git 기준으로 복구
+      selfHeal: true
+    # namespace 자동 생성과 서버 측 적용 사용
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
 YAML
 }
 
@@ -479,7 +566,7 @@ spec:
           resources:
             requests:
               cpu: 200m
-              memory: 512Mi
+              memory: 256Mi
             limits:
               cpu: 1000m
               memory: 2Gi

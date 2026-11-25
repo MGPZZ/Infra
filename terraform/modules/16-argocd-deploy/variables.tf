@@ -20,6 +20,16 @@ variable "cnpg_role_arn" {
   type        = string
 }
 
+variable "nat_controller" {
+  type = object({
+    image_repository    = string
+    role_arn            = string
+    config              = any
+    webhook_secret_name = string
+    token_version       = string
+  })
+}
+
 variable "observability_priority_class_name" {
   description = "PriorityClass for metric collection and alerting pods."
   type        = string

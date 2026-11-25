@@ -1,47 +1,19 @@
-############################################
-# 2. IAM Policy for S3 Access
-############################################
-resource "aws_iam_policy" "cnpg_s3_policy" {
-  name        = "side-project-cnpg-s3-policy"
-  description = "IAM Policy for CNPG to access S3 backup bucket"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:PutObject",
-          "s3:GetObject",
-          "s3:DeleteObject",
-          "s3:ListBucket"
-        ]
-        Resource = [
-          "arn:aws:s3:::side-project-cnpg-backup-07l03u",
-          "arn:aws:s3:::side-project-cnpg-backup-07l03u/*"
-        ]
-      }
-    ]
-  })
-}
-
-############################################
-# 3. IRSA (IAM Role for Service Account)
-############################################
+# CNPG 백업에 필요한 권한과 IRSA 설정
 module "cnpg_irsa" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "~> 5.0"
+  source = "../../../modules/05-iam"
 
-  role_name = "side-project-cnpg-s3-role"
+  role_name                  = "side-project-cnpg-s3-role"
+  policy_name                = "side-project-cnpg-s3-policy"
+  policy_description         = "IAM Policy for CNPG to access S3 backup bucket"
+  force_detach_policies      = true
+  oidc_provider_arn          = module.side_project_eks.oidc_provider_arn
+  namespace_service_accounts = ["backend:side-project-db", "finops:krr-data-db"]
 
-  oidc_providers = {
-    main = {
-      provider_arn               = module.side_project_eks.oidc_provider_arn
-      namespace_service_accounts = ["backend:side-project-db", "finops:krr-data-db"]
+  policy_statements = [
+    {
+      effect    = "Allow"
+      actions   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:ListBucket"]
+      resources = ["arn:aws:s3:::side-project-cnpg-backup-07l03u", "arn:aws:s3:::side-project-cnpg-backup-07l03u/*"]
     }
-  }
-
-  role_policy_arns = {
-    s3_access = aws_iam_policy.cnpg_s3_policy.arn
-  }
+  ]
 }

@@ -7,6 +7,37 @@ module "karpenter" {
   cluster_name      = module.side_project_eks.cluster_name
   oidc_provider_arn = module.side_project_eks.oidc_provider_arn
 }
+# 기존 Karpenter Controller 역할에 필요한 추가 권한 정의
+module "karpenter_iam" {
+  source = "../../../modules/05-iam"
+
+  create_role = false
+  role_name   = basename(module.karpenter.iam_role_arn)
+  policy_name = "karpenter-list-instance-profiles"
+
+  policy_statements = [
+    {
+      effect    = "Allow"
+      actions   = ["iam:ListInstanceProfiles"]
+      resources = ["*"]
+      sid       = "AllowListInstanceProfiles"
+    },
+    {
+      effect    = "Allow"
+      actions   = ["iam:CreateServiceLinkedRole"]
+      resources = ["arn:aws:iam::*:role/aws-service-role/spot.amazonaws.com/AWSServiceRoleForEC2Spot"]
+      sid       = "AllowCreateSpotServiceLinkedRole"
+      condition = [
+        {
+          test     = "StringEquals"
+          variable = "iam:AWSServiceName"
+          values   = ["spot.amazonaws.com"]
+        }
+      ]
+    }
+  ]
+}
+
 resource "helm_release" "karpenter" {
   namespace  = "kube-system"
   name       = "karpenter"
@@ -47,5 +78,5 @@ resource "helm_release" "karpenter" {
     name  = "serviceAccount.name"
     value = "karpenter"
   }
-  depends_on = [module.karpenter, module.side_project_eks]
+  depends_on = [module.karpenter, module.karpenter_iam, module.side_project_eks]
 }

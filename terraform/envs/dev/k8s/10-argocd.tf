@@ -25,6 +25,10 @@ data "aws_ecr_repository" "krr_analyzer" {
   name = "krr-analyzer"
 }
 
+data "aws_ecr_repository" "nat_controller" {
+  name = "nat-controller"
+}
+
 # enable_krr_demo_seed가 false면 이 ECR repo가 아직 없어도(init 레이어 미적용) apply가
 # 막히지 않도록 count로 조건부 조회합니다.
 data "aws_ecr_repository" "krr_demo_seed" {
@@ -91,10 +95,20 @@ module "argocd_deploy" {
   enable_krr_demo_seed = var.enable_krr_demo_seed
   krr_demo_seed_image  = var.enable_krr_demo_seed ? "${data.aws_ecr_repository.krr_demo_seed[0].repository_url}:latest" : ""
 
+  nat_controller = {
+    image_repository    = data.aws_ecr_repository.nat_controller.repository_url
+    role_arn            = data.terraform_remote_state.infra.outputs.nat_controller_role_arn
+    config              = data.terraform_remote_state.infra.outputs.nat_controller_config
+    webhook_secret_name = kubernetes_secret_v1.nat_controller_webhook["manage"].metadata[0].name
+    token_version       = data.aws_secretsmanager_secret_version.nat_controller_webhook.version_id
+  }
+
   depends_on = [
     module.argocd,
     data.kubectl_manifest.argocd_application_crd,
     kubectl_manifest.ebs_gp3_storage_class,
-    kubernetes_secret_v1.bank_jwt
+    kubernetes_secret_v1.bank_jwt,
+    kubernetes_secret_v1.nat_controller_webhook,
+    kubernetes_config_map_v1.nat_controller_state
   ]
 }

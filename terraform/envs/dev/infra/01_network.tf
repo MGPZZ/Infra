@@ -1,6 +1,6 @@
-############################################
-# 1. NETWORK LAYER (VPC / IGW / SUBNET)
-############################################
+##################################################
+# 1. NETWORK LAYER (VPC / IGW / SUBNET / ENDPOINT)
+##################################################
 
 # [1] VPC (Virtual Private Cloud) 생성
 # 10.0.0.0/16 대역 생성
@@ -70,6 +70,29 @@ module "igw" {
   source = "../../../modules/03-internet-gateway"
   vpc_id = module.side_project_vpc.vpc_id
   name   = "side_project-igw"
+}
+
+# [5] NAT 장애 중에도 EC2·STS API를 호출할 사설 연결 경로
+module "nat_controller_endpoints" {
+  source = "../../../modules/17-endpoint"
+
+  # Pod용 IP 예약이 끝난 뒤 Endpoint 네트워크 인터페이스 생성
+  depends_on = [
+    module.side_project_private_subnet_cluster_a,
+    module.side_project_private_subnet_cluster_c,
+  ]
+
+  name   = "side-project-nat-controller"
+  vpc_id = module.side_project_vpc.vpc_id
+
+  # 두 AZ의 Private Subnet에 Endpoint 네트워크 인터페이스 배치
+  subnet_ids = [
+    module.side_project_private_subnet_cluster_a.subnet_id,
+    module.side_project_private_subnet_cluster_c.subnet_id
+  ]
+
+  security_group_ids = [aws_security_group.nat_controller_endpoint.id]
+  services           = ["ec2", "sts"]
 }
 
 

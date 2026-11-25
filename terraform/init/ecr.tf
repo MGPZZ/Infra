@@ -61,5 +61,12 @@ module "loadgen_ecr" {
   image_tag_mutability = "IMMUTABLE"
 }
 
+# NAT Controller 이미지 저장소
+module "nat_controller_ecr" {
+  source               = "../modules/09-ecr"
+  repository_name      = "nat-controller"
+  image_tag_mutability = "MUTABLE"
+}
+
 
 

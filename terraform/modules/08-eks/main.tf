@@ -13,7 +13,9 @@ module "eks" {
   authentication_mode                      = "API_AND_CONFIG_MAP"
   enable_cluster_creator_admin_permissions = true
   enable_irsa                              = true
-
+  
+  # cloudwatch로 자동 전송하는 로그 없애기
+  cluster_enabled_log_types                = []
   cluster_addons = {
     # coredns는 서비스를 이름으로 찾을 수 있게해줌
     coredns = {

@@ -28,3 +28,10 @@ aws secretsmanager put-secret-value \
   --secret-string '{"username":"testuser","password":"testpassword"}' \
   --region ap-northeast-2 \
   --profile 계정명
+
+# NAT 웹훅 테스트용 토큰 갱신. 최초 등록은 create-secret의 --name을 사용한다.
+aws secretsmanager put-secret-value \
+  --secret-id side-project/nat-controller/webhook-token \
+  --secret-string '{"token":"test-nat-webhook-token-0123456789"}' \
+  --region ap-northeast-2 \
+  --profile 계정명

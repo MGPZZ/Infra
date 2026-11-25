@@ -21,6 +21,9 @@ kube-state-metrics:
 
 alertmanager:
   alertmanagerSpec:
+    # alertmanager 컨테이너에 token 파일을 마운트
+    secrets:
+      - "${nat_controller_webhook_secret}"
     priorityClassName: "${observability_priority_class_name}"
     nodeSelector:
       role: monitoring
@@ -41,11 +44,25 @@ alertmanager:
       group_interval: 5m
       repeat_interval: 12h
       routes:
+        # NAT 장애 알림은 AZ별로 묶어 조치용 Controller로 전달
+        - receiver: 'nat-controller-webhook'
+          matchers:
+            - alertname = "NATEgressFailure"
+          group_by: ['alertname', 'az']
         - receiver: 'tg-gateway-webhook'
           matchers:
             - namespace = "default"
     receivers:
       - name: 'null'
+      # 마운트된 Secret 파일의 값으로 웹훅 요청을 인증
+      - name: 'nat-controller-webhook'
+        webhook_configs:
+          - url: 'http://nat-controller.manage.svc.cluster.local:8080/alerts'
+            send_resolved: false
+            http_config:
+              authorization:
+                type: Bearer
+                credentials_file: '/etc/alertmanager/secrets/${nat_controller_webhook_secret}/token'
       - name: 'tg-gateway-webhook'
         webhook_configs:
           - url: 'http://tg-gateway-service.monitoring.svc.cluster.local:8000/webhook/alertmanager'
