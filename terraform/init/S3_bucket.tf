@@ -1,6 +1,6 @@
-# ----------------------------------------------------------------
-# 파일 위치 : /home/user1/practical-project/infra/terraform/init/S3_bucket.tf
-# ----------------------------------------------------------------
+# ----------------------------------------------
+# 파일 위치 : /Infra/terraform/init/S3_bucket.tf
+# ----------------------------------------------
 
 # 파일 최상단 — 버전 명시 (main 프로젝트와 aws 버전 통일)
 terraform {
@@ -54,19 +54,32 @@ resource "aws_s3_bucket_public_access_block" "tfstate" {
   restrict_public_buckets = true
 }
 
-# ----------------------------------------------------------------
-# Thanos 메트릭 장기 보관용 S3 버킷
-# ----------------------------------------------------------------
 
-resource "random_id" "thanos_bucket_suffix" {
-  byte_length = 4
+# ------------------------
+# CNPG 백업 보존용 S3 버킷
+# ------------------------
+resource "aws_s3_bucket" "cnpg_backup_permanent" {
+  bucket        = "side-project-cnpg-backup-07l03u"
+  force_destroy = false # 백업 데이터 보호를 위해 파괴 방지
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
+output "cnpg_s3_bucket_name" {
+  value       = aws_s3_bucket.cnpg_backup_permanent.id
+  description = "CNPG backup S3 bucket name"
+}
+
+# --------------------------------
+# Thanos 메트릭 장기 보관용 S3 버킷
+# --------------------------------
 resource "aws_s3_bucket" "thanos_metrics" {
-  bucket        = "project03-thanos-metrics-83154bf5"
+  bucket        = "side-project-thanos-metrics-83154bf5"
   force_destroy = false
 
-  # dev EKS를 반복해서 destroy/apply하더라도 KRR·Chronos 과거 메트릭은 보존합니다.
+  # dev EKS를 반복해서 destroy/apply하더라도 KRR 과거 메트릭은 보존합니다.
   # 버킷을 정말 폐기할 때만 이 보호를 명시적으로 제거합니다.
   lifecycle {
     prevent_destroy = true
@@ -101,21 +114,4 @@ resource "aws_s3_bucket_public_access_block" "thanos_metrics_public_block" {
 output "thanos_s3_bucket_name" {
   value       = aws_s3_bucket.thanos_metrics.id
   description = "Thanos metrics S3 bucket name"
-}
-
-# ----------------------------------------------------------------
-# CNPG 백업 보존용 S3 버킷
-# ----------------------------------------------------------------
-resource "aws_s3_bucket" "cnpg_backup_permanent" {
-  bucket        = "project03-cnpg-backup-07l03u"
-  force_destroy = false # 백업 데이터 보호를 위해 파괴 방지
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-output "cnpg_s3_bucket_name" {
-  value       = aws_s3_bucket.cnpg_backup_permanent.id
-  description = "CNPG backup S3 bucket name"
 }

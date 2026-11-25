@@ -10,32 +10,49 @@ variable "bank_jwt_secret_name" {
 }
 
 variable "aws_profile" { type = string }
+variable "thanos_role_arn" {
+  description = "IAM role ARN for Thanos and the Prometheus sidecar"
+  type        = string
+}
+
+variable "cnpg_role_arn" {
+  description = "IAM role ARN for CNPG service and KRR database backups"
+  type        = string
+}
+
+variable "nat_controller" {
+  type = object({
+    image_repository    = string
+    role_arn            = string
+    config              = any
+    webhook_secret_name = string
+    token_version       = string
+  })
+}
+
+variable "observability_priority_class_name" {
+  description = "PriorityClass for metric collection and alerting pods."
+  type        = string
+}
+
+variable "service_priority_class_name" {
+  description = "PriorityClass for service and management pods."
+  type        = string
+}
+
+variable "support_priority_class_name" {
+  description = "PriorityClass for analysis, dashboards and supporting pods."
+  type        = string
+}
+
 variable "domain_name" {
   description = "The domain name for the environment"
   type        = string
 }
 
 
-variable "redis_host" {
-  description = "Sample FastAPI와 Worker가 연결할 ElastiCache Primary Endpoint"
-  type        = string
-  default     = ""
-}
-
-variable "redis_port" {
-  description = "Sample FastAPI와 Worker가 연결할 ElastiCache Port"
-  type        = number
-  default     = 6379
-}
-
-variable "finops_analyzer_image_repository" {
-  description = "FinOps Analyzer가 사용하는 ECR Repository URL"
-  type        = string
-  default     = ""
-}
-
-variable "chronos_model_image_repository" {
-  description = "Chronos 예측 서비스가 사용하는 ECR Repository URL"
+variable "krr_analyzer_image_repository" {
+  description = "KRR Analyzer가 사용하는 ECR Repository URL"
   type        = string
   default     = ""
 }

@@ -36,7 +36,7 @@ resource "kubectl_manifest" "lbc_gateway_crds" {
 }
 
 data "aws_iam_role" "aws_lb_controller" {
-  name = "project03-eks-aws-lb-controller"
+  name = "side-project-eks-aws-lb-controller"
 }
 
 # ALB Controller를 Helm으로 EKS에 설치
@@ -49,8 +49,12 @@ resource "helm_release" "aws_lb_controller" {
 
   set = [
     {
+      name  = "nodeSelector.role"
+      value = "management"
+    },
+    {
       name  = "clusterName"
-      value = "project03-eks"
+      value = "side-project-eks"
     },
     {
       name  = "serviceAccount.create"
@@ -72,6 +76,6 @@ resource "helm_release" "aws_lb_controller" {
 
   depends_on = [
     kubectl_manifest.gateway_api_crds,
-    kubectl_manifest.lbc_gateway_crds
+    kubectl_manifest.lbc_gateway_crds,
   ]
 }

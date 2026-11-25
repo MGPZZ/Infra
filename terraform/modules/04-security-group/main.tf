@@ -98,29 +98,3 @@ resource "aws_security_group" "eks_nodes" {
   }
 }
 
-# 4. RDS (데이터베이스) 보안 그룹
-resource "aws_security_group" "rds" {
-  name        = "${var.name}-rds-sg"
-  description = "Security group for RDS"
-  vpc_id      = var.vpc_id
-
-  # EKS 프라이빗 서브넷 대역에서만 5432(PostgreSQL) 접근가능하도록
-  ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = var.eks_private_subnet_cidrs
-  }
-
-  # 아웃바운드 전부 허용
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.name}-rds-sg"
-  }
-}

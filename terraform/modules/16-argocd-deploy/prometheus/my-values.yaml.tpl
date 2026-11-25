@@ -1,7 +1,32 @@
 # Prometheus/Grafana/Alertmanager 커스텀 설정
-# 담당: 한윤성 (FinOps/모니터링 파트)
+prometheus-node-exporter:
+  priorityClassName: "${observability_priority_class_name}"
+
+prometheusOperator:
+  priorityClassName: "${observability_priority_class_name}"
+  nodeSelector:
+    role: monitoring
+  admissionWebhooks:
+    patch:
+      priorityClassName: "${observability_priority_class_name}"
+      nodeSelector:
+        role: monitoring
+
+
+kube-state-metrics:
+  priorityClassName: "${observability_priority_class_name}"
+  nodeSelector:
+    role: monitoring
+
+
 alertmanager:
   alertmanagerSpec:
+    # alertmanager 컨테이너에 token 파일을 마운트
+    secrets:
+      - "${nat_controller_webhook_secret}"
+    priorityClassName: "${observability_priority_class_name}"
+    nodeSelector:
+      role: monitoring
     resources:
       requests:
         cpu: 50m
@@ -19,24 +44,43 @@ alertmanager:
       group_interval: 5m
       repeat_interval: 12h
       routes:
+        # NAT 장애 알림은 AZ별로 묶어 조치용 Controller로 전달
+        - receiver: 'nat-controller-webhook'
+          matchers:
+            - alertname = "NATEgressFailure"
+          group_by: ['alertname', 'az']
         - receiver: 'tg-gateway-webhook'
           matchers:
             - namespace = "default"
     receivers:
       - name: 'null'
+      # 마운트된 Secret 파일의 값으로 웹훅 요청을 인증
+      - name: 'nat-controller-webhook'
+        webhook_configs:
+          - url: 'http://nat-controller.manage.svc.cluster.local:8080/alerts'
+            send_resolved: false
+            http_config:
+              authorization:
+                type: Bearer
+                credentials_file: '/etc/alertmanager/secrets/${nat_controller_webhook_secret}/token'
       - name: 'tg-gateway-webhook'
         webhook_configs:
-          # TODO: tg-gateway Service의 정확한 이름/네임스페이스는 mak-argocd-deploy 매니페스트 확인 후 확정 필요 (임종원님 확인 필요)
-          - url: 'http://tg-gateway-service.default.svc.cluster.local:8000/webhook/alertmanager'
+          - url: 'http://tg-gateway-service.monitoring.svc.cluster.local:8000/webhook/alertmanager'
             send_resolved: true
+
+
+            
 prometheus:
   # Prometheus가 사용할 ServiceAccount에 Thanos S3 IRSA 권한 추가
   serviceAccount:
     create: true
     name: prometheus-stack-kube-prom-prometheus
     annotations:
-      eks.amazonaws.com/role-arn: "arn:aws:iam::372666940978:role/project03-thanos-s3-role"
+      eks.amazonaws.com/role-arn: "${thanos_role_arn}"
   prometheusSpec:
+    priorityClassName: "${observability_priority_class_name}"
+    nodeSelector:
+      role: monitoring
     # Helm release name에 의존하지 않고 명시적인 라벨로 ServiceMonitor를 선택합니다.
     serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorSelector: {}
@@ -57,7 +101,7 @@ prometheus:
           name: thanos-objstore-config
           key: objstore.yml
 %{ if enable_krr_demo_seed ~}
-    # KRR/Chronos 더미 이력 데이터를 Prometheus가 뜨기 전에 미리 채워 넣는 initContainer입니다.
+    # KRR 더미 이력 데이터를 Prometheus가 뜨기 전에 미리 채워 넣는 initContainer입니다.
     # sample-fastapi 네임스페이스뿐 아니라 Bank of Anthos 백엔드(backend 네임스페이스:
     # userservice/contacts/balancereader/ledgerwriter/transactionhistory)까지 함께 시딩합니다.
     # destroy/apply를 반복하는 dev 환경 특성상 "데이터를 보존"하는 대신, Prometheus가
@@ -77,6 +121,9 @@ prometheus:
             mountPath: /prometheus
 %{ endif ~}
 grafana:
+  priorityClassName: "${support_priority_class_name}"
+  nodeSelector:
+    role: monitoring
   # persistence가 ReadWriteOnce PVC라 기본 RollingUpdate 전략(새 파드를 먼저 띄우고
   # 옛 파드를 나중에 지움)과 근본적으로 충돌합니다 - 새 파드가 볼륨을 못 붙잡아
   # Multi-Attach 에러로 영원히 Pending 상태가 되고, ArgoCD도 그 Deployment가
@@ -84,9 +131,8 @@ grafana:
   # 먼저 내리고 나서 새 파드를 띄우게 합니다.
   strategy:
     type: Recreate
-  # Reflector가 krr-data-db-app Secret(finops)을 이 네임스페이스(prometheus)로
-  # 복제해준 것을 env var로 주입합니다. CNPG가 비밀번호를 재발급해도 Reflector가
-  # 복제본을 계속 갱신하므로, 여기서는 항상 최신 값을 읽게 됩니다.
+  # Reflector가 finops의 Secret을 monitoring으로 복사합니다.
+  # Secret 변경 후 환경변수에 반영하려면 Grafana Pod를 재생성해야 합니다.
   envValueFrom:
     KRR_DB_USER:
       secretKeyRef:
@@ -104,7 +150,7 @@ grafana:
   additionalDataSources:
     - name: Thanos
       type: prometheus
-      url: http://thanos-query.prometheus.svc.cluster.local:9090
+      url: http://thanos-query.monitoring.svc.cluster.local:9090
       access: proxy
       isDefault: false
       version: 1
