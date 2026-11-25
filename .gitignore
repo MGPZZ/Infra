@@ -1,4 +1,5 @@
 .terraform/
 *.tfstate*
 *.tfvars
+backend.hcl
 *.tfvars.json

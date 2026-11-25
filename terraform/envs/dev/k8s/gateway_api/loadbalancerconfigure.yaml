@@ -5,10 +5,10 @@ metadata:
   name: my-gateway-lbconfig
   namespace: default
 spec:
-  loadBalancerName: project03-alb
+  loadBalancerName: side-project-alb
   scheme: internet-facing
   securityGroups: 
-    - project03-alb-sg
+    - side-project-alb-sg
   listenerConfigurations:
     - protocolPort: HTTPS:443
       defaultCertificate: "${certificate_arn}"

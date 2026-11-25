@@ -1,66 +1,83 @@
-# modules/05-iam/main.tf
+# 지정한 ServiceAccount가 역할을 사용할 수 있도록 IRSA 신뢰 관계 설정
+data "aws_iam_policy_document" "irsa" {
+  count = var.create_role ? 1 : 0
 
-# 1. EKS 클러스터(컨트롤 플레인)를 위한 IAM 역할
-# EKS 마스터 노드가 AWS 리소스(EC2, 로드밸런서 등)를 제어할 수 있도록 권한을 부여합니다.
-resource "aws_iam_role" "eks_cluster" {
-  name = "${var.name}-eks-cluster-role"
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [var.oidc_provider_arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(var.oidc_provider_arn, "/^(.*provider/)/", "")}:sub"
+      values   = [for sa in var.namespace_service_accounts : "system:serviceaccount:${sa}"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(var.oidc_provider_arn, "/^(.*provider/)/", "")}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "eks.amazonaws.com"
+# infra에서 전달한 항목으로 권한 정책의 JSON 구조 생성
+data "aws_iam_policy_document" "permissions" {
+  version                 = "2012-10-17"
+  source_policy_documents = var.policy_json == null ? [] : [var.policy_json]
+
+  dynamic "statement" {
+    for_each = var.policy_statements
+    content {
+      sid       = statement.value.sid
+      effect    = statement.value.effect
+      actions   = statement.value.actions
+      resources = statement.value.resources
+
+      dynamic "condition" {
+        for_each = statement.value.condition
+        content {
+          test     = condition.value.test
+          variable = condition.value.variable
+          values   = condition.value.values
+        }
       }
-    }]
-  })
+    }
+  }
 }
 
-resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.eks_cluster.name
+# 새로운 IRSA 역할 생성
+resource "aws_iam_role" "this" {
+  count = var.create_role ? 1 : 0
+
+  name                  = var.role_name
+  assume_role_policy    = data.aws_iam_policy_document.irsa[0].json
+  force_detach_policies = var.force_detach_policies
 }
 
+# infra에서 전달받은 권한 내용으로 관리형 정책 생성
+resource "aws_iam_policy" "this" {
+  count = var.create_role ? 1 : 0
 
-# 2. EKS 워커 노드(EC2)를 위한 IAM 역할
-# 실제 파드들이 띄워지는 EC2 인스턴스들이 가져야 할 권한들입니다.
-resource "aws_iam_role" "eks_nodes" {
-  name = "${var.name}-eks-node-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "ec2.amazonaws.com"
-      }
-    }]
-  })
+  name        = var.policy_name
+  description = var.policy_description
+  policy      = data.aws_iam_policy_document.permissions.json
 }
 
-# (1) 워커 노드가 EKS 컨트롤 플레인에 등록되고 통신할 수 있게 하는 필수 권한
-resource "aws_iam_role_policy_attachment" "eks_worker_node_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-  role       = aws_iam_role.eks_nodes.name
+# 생성한 역할에 관리형 정책 연결
+resource "aws_iam_role_policy_attachment" "this" {
+  count = var.create_role ? 1 : 0
+
+  role       = aws_iam_role.this[0].name
+  policy_arn = aws_iam_policy.this[0].arn
 }
 
-# (2) 파드들에게 VPC의 프라이빗 IP를 할당할 수 있게 해주는 CNI 네트워킹 권한
-resource "aws_iam_role_policy_attachment" "eks_cni_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-  role       = aws_iam_role.eks_nodes.name
-}
+# 기존 역할을 사용할 때는 전달받은 인라인 정책만 연결
+resource "aws_iam_role_policy" "inline" {
+  count = var.create_role ? 0 : 1
 
-# (3) ECR에서 컨테이너 이미지를 다운로드 받을 수 있게 해주는 권한
-resource "aws_iam_role_policy_attachment" "eks_ecr_read_only" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-  role       = aws_iam_role.eks_nodes.name
-}
-
-# (4) Session Manager(SSM) 권한
-# 워커 노드에 SSH 키 없이도 AWS 콘솔에서 안전하게 접속할 수 있게 해줍니다.
-resource "aws_iam_role_policy_attachment" "ssm_managed_instance_core" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-  role       = aws_iam_role.eks_nodes.name
+  name   = var.policy_name
+  role   = var.role_name
+  policy = data.aws_iam_policy_document.permissions.json
 }

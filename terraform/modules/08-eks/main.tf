@@ -11,23 +11,51 @@ module "eks" {
   node_security_group_tags       = var.node_security_group_tags
 
   authentication_mode                      = "API_AND_CONFIG_MAP"
-  enable_cluster_creator_admin_permissions = false
+  enable_cluster_creator_admin_permissions = true
   enable_irsa                              = true
-
+  
+  # cloudwatch로 자동 전송하는 로그 없애기
+  cluster_enabled_log_types                = []
   cluster_addons = {
+    # coredns는 서비스를 이름으로 찾을 수 있게해줌
     coredns = {
       resolve_conflicts_on_create = "OVERWRITE"
       resolve_conflicts_on_update = "OVERWRITE"
       configuration_values = jsonencode({
-        replicaCount = 3
+        # pod 개수를 2개로하여 management 노드가 있는 두 AZ에 하나씩 배치
+        replicaCount = 2
+        autoScaling = {
+          enabled = false
+        }
+        affinity = {
+          nodeAffinity = {
+            # 조건에 맞지 않는 노드에는 스케쥴링 되지 않음
+            requiredDuringSchedulingIgnoredDuringExecution = {
+              nodeSelectorTerms = [
+                {
+                  # 스케쥴링 되는 노드 조건 management 노드
+                  matchExpressions = [
+                    {
+                      key      = "role"
+                      operator = "In"
+                      values   = ["management"]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
         podAnnotations = {
           "karpenter.sh/do-not-disrupt" = "true"
         }
+        # management 노드가 있는 두 AZ에 하나씩 배치하며, 한 AZ만 있으면 두 번째 Pod는 대기
         topologySpreadConstraints = [
           {
             maxSkew           = 1
-            topologyKey       = "topology.kubernetes.io/zone"
-            whenUnsatisfiable = "ScheduleAnyway"
+            minDomains        = 2
+            topologyKey       = "topology.kubernetes.io/zone" # 가용영역 분산
+            whenUnsatisfiable = "DoNotSchedule"
             labelSelector = {
               matchLabels = {
                 "k8s-app" = "kube-dns"
@@ -36,7 +64,7 @@ module "eks" {
           },
           {
             maxSkew           = 1
-            topologyKey       = "kubernetes.io/hostname"
+            topologyKey       = "kubernetes.io/hostname" # 노드 1개에 다 안올라가게 분산
             whenUnsatisfiable = "DoNotSchedule"
             labelSelector = {
               matchLabels = {
@@ -47,69 +75,44 @@ module "eks" {
         ]
       })
     }
-    kube-proxy         = { resolve_conflicts_on_create = "OVERWRITE" }
-    vpc-cni            = { resolve_conflicts_on_create = "OVERWRITE" }
-    aws-ebs-csi-driver = { resolve_conflicts_on_create = "OVERWRITE" }
-  }
-
-  eks_managed_node_group_defaults = {
-    iam_role_additional_policies = {
-      AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
-    }
-  }
-
-  eks_managed_node_groups = {
-    eks-management-node = {
-      name                   = "eks-management-node"
-      instance_types         = var.instance_types
-      ami_type               = var.ami_type
-      min_size               = 1
-      max_size               = 2
-      desired_size           = 1
-      vpc_security_group_ids = var.node_security_group_ids
-
-      labels = {
-        role                      = "management"
-        "karpenter.sh/controller" = "true"
-      }
-    }
-
-    eks-worker-node = {
-      name                   = "eks-worker-node"
-      instance_types         = var.instance_types
-      ami_type               = var.ami_type
-      min_size               = var.min_size
-      max_size               = var.max_size
-      desired_size           = var.desired_size
-      vpc_security_group_ids = var.node_security_group_ids
-
-      labels = {
-        role = "worker"
-      }
-    }
-
-    eks-db-node = {
-      name                   = "eks-db-node"
-      instance_types         = ["t3.medium"]
-      ami_type               = var.ami_type
-      min_size               = 1
-      max_size               = 2
-      desired_size           = 1
-      vpc_security_group_ids = var.node_security_group_ids
-
-      labels = {
-        role = "db"
-      }
-
-      taints = {
-        dedicated = {
-          key    = "dedicated"
-          value  = "db"
-          effect = "NO_SCHEDULE"
+    kube-proxy = { resolve_conflicts_on_create = "OVERWRITE" }
+    vpc-cni = {
+      # node가 뜨기 전 미리 설정
+      before_compute              = true
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
+      configuration_values = jsonencode({
+        env = {
+          ENABLE_PREFIX_DELEGATION = "true"
+          # 예비 prefix 1개 유지 대신 노드별 여유 Pod IP가 2개 미만이면 보충합니다.
+          WARM_PREFIX_TARGET = "0"
+          WARM_IP_TARGET     = "2"
         }
-      }
+      })
+    }
+    eks-node-monitoring-agent = {
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
+    }
+    aws-ebs-csi-driver = {
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
+      configuration_values = jsonencode({
+        controller = {
+          nodeSelector = {
+            role = "management"
+          }
+        }
+        node = {
+          nodeSelector = var.ebs_csi_node_selector
+        }
+      })
     }
   }
+
+  eks_managed_node_group_defaults = var.node_group_defaults
+
+  eks_managed_node_groups = var.node_groups
 
   access_entries = {
     for arn in var.admin_users : arn => {
